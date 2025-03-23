@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+.transition-slow-ease-in
+{
+    transition: all 500ms ease-in;
+}
+
+#paragraph
+{
+    color: red;
+}
+
+.tiny-text
+{
+    color: blue;
+}
+
+.transition-slow-ease-out
+{
+    transition: all 500ms ease-out;
+}
+
+.transition-slow-ease-in-out
+{
+    transition: all 500ms ease-in-out;
+}
+
+.transition-fast-ease-in
+{
+    transition: all 250ms ease-in;
+}
+
+.transition-fast-ease-out
+{
+    transition: all 250ms ease-out;
+}
+
+.transition-fast-ease-in-out
+{
+    transition: all 250ms ease-in-out;
+}
+
+.transition-wait
+{
+    transition-delay: 200ms;
+}
+
+.leaflet-tile-container img {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* .leaflet-container
+{
+    will-change: auto !important;
+    transform: none !important;
+} */
