@@ -3,7 +3,7 @@ import axios from "./components/api/axios";
 import { useAppMainContext } from "./components/context/AppProvider";
 
 const Login = () => {
-  const [ username, setUsername ] = useState('');
+  const [ email, setEmail ] = useState('');
   const [ password, setPassword ] = useState('');
   
   const [ message, setMessage ] = useState('');
@@ -14,7 +14,7 @@ const Login = () => {
     e.preventDefault();
     
     const results = axios.post('auth/login', {
-      username: username,
+      email: email,
       password: password 
     });
     
@@ -45,13 +45,13 @@ const Login = () => {
             )
           }
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">Nom d&apos;utilisateur</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
             <input
-              type="username"
-              id="username"
+              type="email"
+              id="email"
               className="w-full px-3 py-2 mt-1 border border-gray-500 rounded-md focus:outline-none focus:ring focus:ring-indigo-200"
               required
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div>
@@ -88,7 +88,7 @@ const Login = () => {
           </button>
 
           <div className="text-sm">
-              <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">Je n&apos;ai pas de compte</a>
+              <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">Je n&apos;ai pas de comptef</a>
           </div>
           
           <div className="hidden text-sm">

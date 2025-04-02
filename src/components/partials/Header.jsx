@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { FaCalculator, FaChartArea, FaCog, FaDiagnoses, FaEdit, FaFile, FaFilePdf, FaInfoCircle, FaKey, FaLock, FaMap, FaPhone, FaPlusCircle, FaSave, FaSearch, FaShoppingCart, FaUnlock, FaUpload, FaUserPlus } from "react-icons/fa";
+import { FaCalculator, FaChartArea, FaCheck, FaCog, FaDiagnoses, FaEdit, FaFile, FaFilePdf, FaHandPointer, FaInfoCircle, FaKey, FaLock, FaMap, FaPhone, FaPlusCircle, FaSave, FaSearch, FaShoppingCart, FaTable, FaUnlock, FaUpload, FaUserPlus } from "react-icons/fa";
 import { FaAlignJustify, FaBell, FaHouse, FaShop } from "react-icons/fa6";
 import { MapContainer, TileLayer } from "react-leaflet";
 import { useAppMainContext } from "../context/AppProvider";
@@ -7,10 +7,13 @@ import axios from "../api/axios";
 import getCookie from "../utils/tools";
 import proj4 from "proj4";
 import { saveAs } from "file-saver";
+import FileMenu from "../menu/FileMenu";
+import EditionMenu from "../menu/EditionMenu";
+
+const LAYER_URL = "layers";
 
 export default function Header() {
 
-    const [query, setQuery] = useState("");
     const [navVisible, setNavVisible] = useState(false);
     const upperHeaderRef = useRef(null);
     const mainHeaderRef = useRef(null);
@@ -21,7 +24,12 @@ export default function Header() {
     const [mainHeaderHeight, setMaiHeaderHeight] = useState(0);
     const [activeMenu, setActiveMenu] = useState(-1);
     const [isActionsVisible, setIsActionVisible] = useState(false);
+
+    const [workspaces, setWorkspaces] = useState([]);
+    const layerNameRef = useRef(null);
+
     const { drawPolygon, setDrawPolygon, editEntity, setEditEntity, setGeojsonContents, geojsonContents,
+        featureGroupLayers, setFeatureGroupLayers,
         fileName, setFileName,
         fileSize, setFileSize,
         fileToUpload, setFileToUpload,
@@ -29,20 +37,21 @@ export default function Header() {
         isGeneratingPDF, setIsGeneratingPDF,
         isPopupVisible, setIsPopupVisible,
         popupMessage, setPopupMessage,
+        setCurrentLayersIdx,
         uploadGeojsonBtn,
         intersectionsArea,
         generatePDFBtnRef,
-        saveBtnRef
+        saveBtnRef,
+        editionActiveLayer,
+        currentWorspaceIdx, setCurrentWorspaceIdx,
+        currentLayersIdx
      } = useAppMainContext();
-    /*const [ fileName, setFileName ] = useState("");
-    const [ fileSize, setFileSize ] = useState(0);
-    const [ fileToUpload, setFileToUpload ] = useState(null);
-    const [ coordSys, setCoordSys ] = useState("");*/
 
     const [ geoDatasFilesContent, setGeoDatasFilesContent ] = useState([]);
     const [ geoDatasFiles, setGeoDatasFiles ] = useState([]);
 
     const UPLOAD_URL = "/geodatas/upload";
+    const GET_USER_WORKSPACES = "/workspaces";
     const authToken = localStorage.getItem("authToken");
     
     //const authToken = getCookie("token");
@@ -50,6 +59,10 @@ export default function Header() {
     useEffect(() => {
         const upperHeader = upperHeaderRef.current;
         const mainHeader = mainHeaderRef.current;
+
+        setCurrentWorspaceIdx(JSON.parse(window.localStorage.getItem("currentWorkspace"))?.id);
+        let layersIdx = window.localStorage.getItem("currentLayers");
+        setCurrentLayersIdx(layersIdx != null && layersIdx != '' ? JSON.parse(layersIdx) : []);
         const handleScroll = () => {
             if(window.scrollY > upperHeader.offsetHeight)
             {
@@ -64,8 +77,10 @@ export default function Header() {
         window.onscroll = handleScroll;
     }, [])
 
-    useEffect(() => {        
-          geoDatasFiles.forEach(geoDataFile => {
+    useEffect(() => { 
+        setGeojsonContents([]);
+
+        geoDatasFiles.forEach(geoDataFile => {
         axios.get(`uploads/${geoDataFile.filename}`, {
             headers: {
               "Content-Type": "application/json"
@@ -81,22 +96,72 @@ export default function Header() {
     }, [geoDatasFiles]);
 
     useEffect(() => {
-        axios.get('geodatas', {
+        //setGeoDatasFiles([]);
+        console.log("********** CURRENT LAYERS IDX **********", currentLayersIdx);
+        
+        const fetchGeoDatasFiles = async () => {
+            let geoDatas = [];
+
+            for(let i = 0; i < currentLayersIdx.length; i++)
+            {
+                let layerIdx = currentLayersIdx[i];
+                
+                let response = await axios.get(`${LAYER_URL}/${layerIdx}`, {
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${authToken}`
+                    },
+                    params: {
+                        workspaceId: currentWorspaceIdx
+                    }
+                });
+                
+                let dt = response.data.GeojsonDatum;
+                //datas.push({ "filename" : dt.filename, "id" : dt.id });
+
+                let datas = { "filename" : dt.filename, "id" : dt.id };
+                console.log("GEOJSON DATAS FILES", datas);
+                geoDatas.push(datas);
+                //setGeoDatasFiles(geoDatasFiles => [...geoDatasFiles, ...datas]);
+
+            }
+            setGeoDatasFiles(geoDatas);
+        }
+        fetchGeoDatasFiles();
+        
+    }, [ currentLayersIdx ]);
+
+    useEffect(() => {
+        console.log("CURRENT IDX CHANGE       ", currentWorspaceIdx);
+        axios.get(GET_USER_WORKSPACES, {
               headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${authToken}`
               }
             })
-            .then(response => {
+            .then(response => {     
                 let datas = [];
-                response.data.forEach(dt => {
-                    datas.push({ "filename" : dt.filename, "id" : dt.id });
-                });
-                //console.log(datas);
-                setGeoDatasFiles(geoDatasFiles => [...geoDatasFiles, ...datas]);
+                let workspaceStorage = window.localStorage.getItem("currentWorkspace");
 
-            }).catch(error => console.error('Erreur lors du chargement des fichiers:', error));
-    }, []);
+                console.log("WORKSPACE STORAGE       ", workspaceStorage);
+                let currentWorkspace = 0;
+                if(workspaceStorage != null && workspaceStorage != undefined)
+                {
+                    let storeDatas = JSON.parse(workspaceStorage);
+                    currentWorkspace = storeDatas.id;
+                } else currentWorkspace = response.data[0].id;
+
+                console.log("RESPONSE", response.data);
+                response.data.forEach(dt => {
+                    datas.push({ "id": dt.id,
+                        "name" : dt.name,
+                        "description" : dt.description,
+                        "isSelected": dt.id == currentWorkspace });
+                });
+                setWorkspaces(datas);
+
+            }).catch(error => console.error('Erreur lors de la recuperations des espaces de travail', error));
+    }, [currentWorspaceIdx]);
 
     const handleShowMenuClick = () => {
         setNavVisible(true);
@@ -176,7 +241,17 @@ export default function Header() {
         };
 
         const originalGeojson = JSON.parse(await fileToUpload.text());
-        const convertedGeojson = convertCoordinates(originalGeojson);
+
+        const currentProjection = originalGeojson.crs?.properties?.name || "Unknown";
+        console.log("Current GeoJSON Projection:", currentProjection);
+        let sourceProj = "EPSG:32632";
+        if (currentProjection.includes("3857") || currentProjection.includes("900913")) {
+            sourceProj = "EPSG:3857"; // Web Mercator
+        } else if (currentProjection.includes("4326") || currentProjection.includes("CRS84")) {
+            sourceProj = "EPSG:4326"; // LatLong
+        }
+        const convertedGeojson = convertCoordinates(originalGeojson, sourceProj);
+        
         const blob = new Blob([JSON.stringify(convertedGeojson)], { type: "application/json" });
         const newFile = new File([blob], fileToUpload.name, { type: "application/json" });
         const updatedGeojson = JSON.parse(await newFile.text());
@@ -187,7 +262,9 @@ export default function Header() {
             }
         };
 
+        //const existingLayers = geojsonContents.map(layer => layer.features).flat();
         const existingLayers = geojsonContents.map(layer => layer.features).flat();
+        //const existingLayers = features;
         updatedGeojson.features = [...existingLayers, ...updatedGeojson.features];
         const uniqueFeatures = [];
         const featureIds = new Set();
@@ -208,7 +285,10 @@ export default function Header() {
         // console.log({ "message" : "FIle to upload", fileToUpload,  convertedGeojson, blob , newFile });
         const formData = new FormData();
         formData.append("file", updatedFile);
-    
+        formData.append("name", layerNameRef.current.value);
+        formData.append("description", "Description de la couche");
+        formData.append("workspaceId", currentWorspaceIdx);
+        
         try {
           const response = await axios.post(UPLOAD_URL, formData, {
             headers: { "Content-Type": "multipart/form-data",
@@ -264,7 +344,7 @@ export default function Header() {
                     <nav className="flex-row hidden mt-10 lg:flex">
                         <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 0)}>
-                            <FaFile className="mr-3" /> Fichier
+                            <FaFile className="mr-3" /> Fichiers
                         </a>
                         <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 1)}>
@@ -277,6 +357,10 @@ export default function Header() {
                         <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 3)}>
                             <FaMap className="mr-3" /> Carte
+                        </a>
+                        <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                            onClick={(e) => handleActivateMenu(e, 4)}>
+                            <FaTable className="mr-3" /> Espaces de travail
                         </a>
                         <a className="flex items-center px-4 py-2 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
                             onClick={handleLogout}>
@@ -296,131 +380,94 @@ export default function Header() {
                 )}
                 
             </div>
+            
 
-            <div className={`transition-fast-ease-out fixed bottom-5  bg-blue-300 p-4 rounded-md shadow-md z-[1001] overflow-auto w-[95%] md:overflow-hidden md:w-auto
+            <div className={`transition-fast-ease-out fixed bottom-5 max-h-[75vh] p-2 z-[1002] overflow-y-auto w-[95%] md:overflow-x-hidden md:w-auto bg-blur-op-20 bg-gray-100 bg-op
                 ${isActionsVisible ? `right-3` : `-right-full`}
             `}>
-                <button className="absolute text-xl font-bold cursor-pointer top-3 right-6 text-blue-950 hover:text-red-950" onClick={() => {
+                <button className="absolute text-xl font-bold cursor-pointer top-5 right-8 text-blue-950 hover:text-red-950" onClick={() => {
                     setIsActionVisible(false);
                     setTimeout(() => {
                         setActiveMenu(-1);
                     }, 500);
                 }}>X</button>
-
                     
-                    { activeMenu == 0 ? (
-                        <>
-                            <h3 className="mb-3 text-2xl font-semibold text-blue-950">Fichier</h3>
-                            <div className="mt-2 space-y-2">
-                                
-                                <button className="flex flex-row text-xl transition-colors cursor-pointer hover:text-red-700 text-blue-950" onClick={(e) => handleUploadgeoJsonFile(e)}>
-                                    <FaUpload  className="mr-4" />
-                                    Ajouter une nouvelle couche (geojson)
-                                </button>
-                                {uploadGeojsonBtn.current && uploadGeojsonBtn.current.files.length > 0 && (
-                                    <div>
-                                        <div className="mt-2">
-                                            <h4 className="text-lg font-semibold text-blue-950">Informations :</h4>
-                                            <p className="text-blue-950">Nom : { fileName }</p>
-                                            <p className="text-blue-950">Taille : { fileSize } KB</p>
-                                            <p className="text-blue-950">Système de coordonnées : { coordSys }</p>
+                    <div className="z-[1005]">
+
+                        { activeMenu == 0 ? <FileMenu 
+                            uploadGeojsonBtn={uploadGeojsonBtn}
+                            fileName={fileName}
+                            fileSize={fileSize}
+                            coordSys={coordSys}
+                            handleUpload={handleUpload}
+                            handleFileChange={handleFileChange}
+                            handleUploadgeoJsonFile={handleUploadgeoJsonFile}
+                            workspaces={workspaces}
+                            layerNameRef={layerNameRef}
+                        /> : `` }
+
+                        { activeMenu == 1 ? <EditionMenu 
+                            setDrawPolygon={setDrawPolygon}
+                            saveBtnRef={saveBtnRef}
+                        /> : `` }
+
+                        { activeMenu == 2 ? (
+                            <>
+                                <h3 className="mb-3 text-2xl font-semibold text-blue-950">Analyses</h3>
+                                <div className="flex flex-col mt-2 space-y-2">
+                                    {/* <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400">
+                                        <FaChartArea className="mr-3 text-xl md:text-3xl" />
+                                        <div className="mt-3 text-sm md:text-lg">
+                                            Calculer la surface d&apos;un empietement
                                         </div>
-                                        <button className="flex flex-row items-center justify-center px-6 py-2 mt-3 bg-blue-400 rounded-sm cursor-pointer hover:bg-blue-600"
-                                            onClick={handleUpload}>
-                                            <FaUpload className="mr-4" />
-                                            Confirmer
-                                        </button>
-                                    </div>
-                                )}
-                                <input type="file" name="geojsonFile" className="hidden" ref={uploadGeojsonBtn} onChange={handleFileChange}/>
-                            </div>
-                        </>
-                    ) : `` }
+                                    </button>
 
-                    { activeMenu == 1 ? (
-                        <>
-                            <h3 className="mb-3 text-2xl font-semibold text-blue-950">Edition</h3>
-                            <div className="flex flex-row mt-2 space-y-2">
-                                <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
-                                    onClick={() => setDrawPolygon(true)}>
+                                    <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400">
+                                        <FaCalculator className="mr-3 text-xl md:text-3xl" />
+                                        <div className="mt-3 text-sm md:text-lg">
+                                            Calculer la surface totale de tous les empietements
+                                        </div>
+                                    </button> */}
+                                    <div><div className="text-semibold">Surface totale de tous les empietements : </div> <div className="font-semibold, font-mono text-green-700">{intersectionsArea.toFixed(4)} m<sup>2</sup></div> </div>
+                                </div>
+                            </>
+                        ) : `` }
 
-                                    <FaPlusCircle className="mr-3 text-xl md:text-3xl" />
-                                    <div className="mt-3 text-sm md:text-lg">
-                                        Ajouter une nouvelle entites
-                                    </div>
-                                </button>
-
-                                {/* <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
-                                    onClick={() => setEditEntity(true)}>
-
-                                    <FaEdit className="mr-3 text-xl md:text-3xl" />
-                                    <div className="mt-3 text-sm md:text-lg">
-                                        Modifier les entites
-                                    </div>
-                                </button> */}
-                                <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
-                                    onClick={(e) => { e.preventDefault(); saveBtnRef.current.click() }}>
-
-                                    <FaSave className="mr-3 text-xl md:text-3xl" />
-                                    <div className="mt-3 text-sm md:text-lg">
-                                        Sauvegarder les modifications
-                                    </div>
+                        { activeMenu == 3 ? (
+                            <div className="mt-2 space-y-2">
+                                <h3 className="mb-3 text-2xl font-semibold text-blue-950">Carte</h3>
+                                {/* <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400">
+                                    <FaUnlock className="mr-3" /> Capturer la carte
+                                </a> */}
+                                <button 
+                                    className="flex items-center px-4 py-2 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
+                                    disabled={isGeneratingPDF}
+                                    onClick={(e) => handleGeneratePdf(e)}>
+                                    <FaFilePdf className="mr-3" /> 
+                                    {isGeneratingPDF ? 'Génération en cours...' : 'Générer un PDF à partir de la vue actuelle'}
                                 </button>
                             </div>
-                            <div>
-                                
-                                { editEntity ? (
-                                    <div className="mt-2 space-y-2">
-                                        <button className="flex flex-row items-center justify-center px-4 py-2 mr-4 font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
-                                            onClick={() => setEditEntity(false)}>
-                                            <FaSave className="mr-3 text-sm md:text-lg" />
-                                            <div className="text-sm md:text-lg">
-                                                Terminer l&apos;edition
-                                            </div>
-                                        </button>
-                                    </div>
-                                ) : `` }
-                            </div>
-                        </>
-                    ) : `` }
+                        ) : `` }
 
-                    { activeMenu == 2 ? (
-                        <>
-                            <h3 className="mb-3 text-2xl font-semibold text-blue-950">Analyses</h3>
-                            <div className="flex flex-col mt-2 space-y-2">
-                                {/* <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400">
-                                    <FaChartArea className="mr-3 text-xl md:text-3xl" />
-                                    <div className="mt-3 text-sm md:text-lg">
-                                        Calculer la surface d&apos;un empietement
-                                    </div>
+                        { activeMenu == 4 ? (
+                            <div className="mt-2 space-y-2">
+                                <h3 className="mb-3 text-2xl font-semibold text-blue-950">Espaces de travail</h3>
+                                {/* <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400">
+                                    <FaUnlock className="mr-3" /> Capturer la carte
+                                </a> */}
+                                <div>
+
+                                </div>
+                                <button 
+                                    className="flex items-center px-4 py-2 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
+                                    disabled={isGeneratingPDF}
+                                    onClick={(e) => handleGeneratePdf(e)}>
+                                    <FaFilePdf className="mr-3" /> 
+                                    {isGeneratingPDF ? 'Génération en cours...' : 'Générer un PDF à partir de la vue actuelle'}
                                 </button>
-
-                                <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400">
-                                    <FaCalculator className="mr-3 text-xl md:text-3xl" />
-                                    <div className="mt-3 text-sm md:text-lg">
-                                        Calculer la surface totale de tous les empietements
-                                    </div>
-                                </button> */}
-                                <div><div className="text-semibold">Surface totale de tous les empietements : </div> <div className="font-semibold, font-mono text-green-700">{intersectionsArea.toFixed(4)} m<sup>2</sup></div> </div>
                             </div>
-                        </>
-                    ) : `` }
-
-                    { activeMenu == 3 ? (
-                        <div className="mt-2 space-y-2">
-                            <h3 className="mb-3 text-2xl font-semibold text-blue-950">Carte</h3>
-                            {/* <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400">
-                                <FaUnlock className="mr-3" /> Capturer la carte
-                            </a> */}
-                            <button 
-                                className="flex items-center px-4 py-2 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
-                                disabled={isGeneratingPDF}
-                                onClick={(e) => handleGeneratePdf(e)}>
-                                <FaFilePdf className="mr-3" /> 
-                                {isGeneratingPDF ? 'Génération en cours...' : 'Générer un PDF à partir de la vue actuelle'}
-                            </button>
-                        </div>
-                    ) : `` }
+                        ) : `` }
+                    </div>
             </div>
 
             {/* Navigation */}
@@ -428,7 +475,7 @@ export default function Header() {
             <div className={`fixed top-0 bottom-0 right-0 left-0 z-[1002] ${navVisible ? `bg-gray-500 opacity-45` : `hidden`}`}
                 onClick={handleHideMenuClick}></div>
             
-            <div className={`fixed bg-blue-300 top-0 bottom-0 z-[1003] ${navVisible ? `w-[85vw]` : `w-[90vw] md:w-[300px]`} rounded-r-md 
+            <div className={`fixed bg-blue-300 top-0 bottom-0 z-[1003] ${navVisible ? `w-[85vw] sm:w-[400px]` : `w-[90vw] sm:w-[200px]`} rounded-r-md 
                 shadow-md border transition-fast-ease-out py-4 z-50
                 ${navVisible ? `left-0` : `-left-full`}`}>
                 <button className="absolute text-2xl top-5 right-5"
@@ -439,7 +486,7 @@ export default function Header() {
                 <nav className="flex flex-col mt-10 space-y-4">
                     <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                         onClick={(e) => handleActivateMenu(e, 0)}>
-                        <FaFile className="mr-3" /> Fichier
+                        <FaFile className="mr-3" /> Fichiers
                     </a>
                     <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                         onClick={(e) => handleActivateMenu(e, 1)}>
@@ -453,7 +500,11 @@ export default function Header() {
                         onClick={(e) => handleActivateMenu(e, 3)}>
                         <FaMap className="mr-3" /> Carte
                     </a>
-                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400">
+                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                            onClick={(e) => handleActivateMenu(e, 4)}>
+                            <FaTable className="mr-3" /> Espaces de travail
+                    </a>
+                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400" onClick={handleLogout}>
                         <FaLock className="mr-3" /> Deconnexion
                     </a>
                 </nav>

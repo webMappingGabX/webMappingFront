@@ -51,6 +51,12 @@
     box-shadow: none !important;
 }
 
+.bg-blur-op-20
+{
+    backdrop-filter: blur(10px);
+    background-color: rgba(128, 128, 128, 0.3);
+}
+
 /* .leaflet-container
 {
     will-change: auto !important;

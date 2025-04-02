@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import axios from "./components/api/axios";
 
 const Register = () => {
-  const [ username, setUsername ] = useState("");
+  const [ name, setName ] = useState("");
   const [ email, setEmail ] = useState("");
   const [ password, setPassword ] = useState("");
   const [ confirmPassword, setConfirmPassword ] = useState("");
@@ -20,7 +20,7 @@ const Register = () => {
       }
       
       const results = axios.post('auth/register', {
-        username: username,
+        name: name,
         email: email,
         password: password
       });
@@ -34,7 +34,7 @@ const Register = () => {
       }).catch(error => {
         console.log("error", error)
         // .response.data.error.errors[0].message
-        const finalMsg = error.response.data.error.original == undefined ? "Adresse email incorrecte" : "email ou nom d'utilisateur déjà utilisé";//error.response.data.error.original.detail;
+        const finalMsg = error.response.data.error.original == undefined ? "Adresse email incorrecte" : "email déjà utilisé";//error.response.data.error.original.detail;
         setMessage(finalMsg);
       });
   }
@@ -50,12 +50,12 @@ const Register = () => {
             )
           }
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nom d&apos;utilisateur</label>
+            <label className="block text-sm font-medium text-gray-700">Nom</label>
             <input
               type="text"
               className="w-full px-3 py-2 mt-1 border border-gray-500 rounded-md focus:outline-none focus:ring focus:ring-indigo-200"
               placeholder="Entrer votre nom d'utilisateur"
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
             />
           </div>
           <div>

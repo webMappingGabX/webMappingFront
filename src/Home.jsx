@@ -2,7 +2,7 @@ import { FeatureGroup, MapContainer, TileLayer, useMap, GeoJSON } from "react-le
 import { EditControl } from "react-leaflet-draw";
 import 'leaflet/dist/leaflet.css';
 import "leaflet-draw/dist/leaflet.draw.css";
-import L from "leaflet";
+import L, { featureGroup } from "leaflet";
 import "leaflet-draw";
 import { useEffect, useRef, useState } from "react";
 import PropTypes from 'prop-types';
@@ -11,7 +11,10 @@ import axios from "./components/api/axios";
 import * as turf from "@turf/turf";
 import jsPDF from 'jspdf';
 import "leaflet-simple-map-screenshoter";
-import MessageBox from "./MessageBox";
+import MessageBox from "./components/popups/MessageBox";
+import CreateWorkspacePopup from "./components/popups/CreateWorkspacePopup";
+import SelectWorkspacePopup from "./components/popups/SelectWorkspacePopup";
+import SelectLayerPopup from "./components/popups/SelectLayerPopup";
 
 // Fix Leaflet icon issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -57,7 +60,8 @@ function DrawControls({ map, featureGroupRef, isEditing, setIsEditing })
       }
     };
   }, [map, featureGroupRef, isEditing]);
-      return null;
+  
+  return null;
 }
 
 DrawControls.propTypes = {
@@ -77,22 +81,37 @@ function MapController({ featureGroupRef, isEditing, setIsEditing }) {
       setIsEditing={setIsEditing} />;
 }
 
+MapController.propTypes = {
+  featureGroupRef: PropTypes.object.isRequired,
+  isEditing: PropTypes.bool.isRequired,
+  setIsEditing: PropTypes.object.isRequired
+}
+
 const Home = () => {
 
   const featureGroupRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [drawnItems, setDrawnItems] = useState([]);
+  const [ initialCenter, setInitialCenter ] = useState([3.868177, 11.519596]);
+
   const { drawPolygon, editEntity, setDrawPolygon, geojsonContents, uploadGeojsonBtn,
+    featureGroupLayers, setFeatureGroupLayers,
     fileName, setFileName,
     fileSize, setFileSize,
     fileToUpload, setFileToUpload,
     isGeneratingPDF, setIsGeneratingPDF,
     isPopupVisible, setIsPopupVisible,
+    isSWPVisible, setIsSWPVisible,
+    isCWPVisible, setIsCWPVisible,
+    isSLPVisible, setIsSLPVisible,
     popupMessage, setPopupMessage,
     coordSys, setCoordSys,
     setIntersectionsArea,
+    editionActiveLayer,
+    currentLayersIdx, setCurrentLayersIdx,
     saveBtnRef,
-    generatePDFBtnRef
+    currentWorspaceIdx,
+    generatePDFBtnRef,
    } = useAppMainContext();
 
   const [activeLayer, setActiveLayer] = useState(null);
@@ -150,9 +169,23 @@ const Home = () => {
   // Expoter les donnees en geojson
   const exportToGeoJSON = async () => {
     if (featureGroupRef.current) {
-      const layers = featureGroupRef.current.getLayers();
-      const features = layers.map(layer => layer.toGeoJSON());
-  
+      //const layers = featureGroupRef.current.getLayers();
+      //const features = layers.map(layer => layer.toGeoJSON());
+      let layersIdx = JSON.parse(localStorage.getItem("currentLayers")) | [];
+      let fIdx = 0;
+      for(let i = 0; i < layersIdx.length; i++)
+      {
+          if(layersIdx[i].toString() === editionActiveLayer.toString())
+          {
+            fIdx = i;
+            break;
+          }
+      }
+      
+      const features = featureGroupLayers[fIdx].map(layer => layer.toGeoJSON());
+      
+      //console.log("FEATURES TO SAVE", features);
+      
       // Remove duplicate features
       const uniqueFeatures = [];
       const featureSet = new Set();
@@ -165,12 +198,15 @@ const Home = () => {
       });
       
       //Remove features with empty properties
-      const filteredFeatures = uniqueFeatures.filter(feature => {
+      /*const filteredFeatures = uniqueFeatures.filter(feature => {
         return feature.properties && Object.keys(feature.properties).length > 0;
       });
 
       // Filter out intersection features
       const nonIntersectionFeatures = filteredFeatures.filter(feature => {
+        return !feature.properties.isIntersection;
+      });*/
+      const nonIntersectionFeatures = uniqueFeatures.filter(feature => {
         return !feature.properties.isIntersection;
       });
       const geoJSON = {
@@ -199,6 +235,7 @@ const Home = () => {
   
       const formData = new FormData();
       formData.append("file", newFile);
+      formData.append("layerId", editionActiveLayer);
   
       try {
         const response = await axios.post(UPLOAD_URL, formData, {
@@ -300,11 +337,16 @@ const Home = () => {
   }, [geojsonLayers]);
 
   const fetchGeojsonData = async () => {
+    let wIdx = JSON.parse(window.localStorage.getItem("currentWorkspace"))?.id | 0;
+
     try {
       const response = await axios.get(GEODATAS_URL, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${authToken}`
+        },
+        params: {
+          workspaceId: wIdx
         }
       });
       setGeojsonLayers(response.data);
@@ -330,10 +372,32 @@ const Home = () => {
   };
   
   const startDrawingPolygon = () => {
+    let layersIdx = JSON.parse(localStorage.getItem("currentLayers")) | [];
+    let fIdx = 0;
+    for(let i = 0; i < layersIdx.length; i++)
+    {
+        if(layersIdx[i].toString() === editionActiveLayer.toString())
+        {
+          fIdx = i;
+          break;
+        }
+    }
+
     // Accès à l'instance de la carte via le featureGroupRef
     if (featureGroupRef.current && featureGroupRef.current._map) {
       const map = featureGroupRef.current._map;
       
+      // Listen for the 'draw:created' event to capture the drawn polygon
+      map.on('draw:created', (event) => {
+        const layer = event.layer;
+        let datas = featureGroupLayers;
+        datas[fIdx].push(layer);
+        
+        setFeatureGroupLayers(datas);
+        const drawnPolygon = layer.toGeoJSON(); // Convert the drawn layer to GeoJSON
+        console.log("Drawn Polygon:", drawnPolygon); // Log the polygon to the console
+        // You can now store the drawnPolygon in a state or variable
+      });
       // Création d'un outil de dessin de polygone
       const polygonDrawHandler = new L.Draw.Polygon(map);
       polygonDrawHandler.enable();
@@ -376,30 +440,56 @@ const Home = () => {
     });
   };
 
+  useEffect(() => {
+    //console.log("FEATURE GROUP REF", featureGroupRef);
+    if(featureGroupRef.current != null)
+      featureGroupRef.current.clearLayers();
+    /*window.localStorage.setItem("currentLayers", []);
+    setCurrentLayersIdx([]);*/
+  }, [currentWorspaceIdx, currentLayersIdx]);
+
   // Ajouter les couches GeoJSON au FeatureGroup
   useEffect(() => {
     if (featureGroupRef.current && geojsonContents.length > 0) {
+      let distinctsDatas = [];
+      featureGroupRef.current.clearLayers();
       geojsonContents.forEach(geojson => {
         const geoJsonLayer = L.geoJSON(geojson, {
           style: dynamicStyle,
           onEachFeature: (feature, layer) => onEachFeature(feature, layer, geojson.id)
         });
         const reprojectedGeoJSON = turf.transformScale(geojson, 1, { mutate: true });
-        console.log("Adding GeoJSON layer:", reprojectedGeoJSON);
+        console.log("Adding GeoJSON layer:", reprojectedGeoJSON, "geojson layer", geoJsonLayer);
         //featureGroupRef.current.addLayer(geoJsonLayer);
-        featureGroupRef.current.clearLayers();
+        let datas = [];
         geoJsonLayer.getLayers().forEach(layer => {
           featureGroupRef.current.addLayer(layer);
+          datas.push(layer);
         });
+        distinctsDatas.push(datas);
       });
+      setFeatureGroupLayers(distinctsDatas);
+      console.log("DISTINCTS DATAS", distinctsDatas);
     }
 
     if (geojsonContents.length > 0) {
       calculateIntersections();
     }
-    //console.log({ "message" : "GEO CONTENTS", geojsonContents });
+    console.log({ "message" : "GEO CONTENTS", geojsonContents, featureGroupLayers, featureGroupRef });
   }, [geojsonContents]);
 
+  useEffect(() => {
+    if (geojsonContents[0]?.features[0]?.geometry?.type === "Point") {
+      setInitialCenter(geojsonContents[0]?.features[0]?.geometry?.coordinates/*.reverse()*/);
+    } else if (geojsonContents[0]?.features[0]?.geometry?.type === "LineString") {
+        setInitialCenter(geojsonContents[0]?.features[0]?.geometry?.coordinates[0]/*.reverse()*/);
+    } else if (geojsonContents[0]?.features[0]?.geometry?.type === "Polygon") {
+      setInitialCenter(geojsonContents[0]?.features[0]?.geometry?.coordinates[0][0]/*.reverse()*/);
+    } else if (geojsonContents[0]?.features[0]?.geometry?.type === "MultiPolygon") {
+      setInitialCenter(geojsonContents[0]?.features[0]?.geometry?.coordinates[0][0][0]/*.reverse()*/);
+    }
+  }, [geojsonContents, initialCenter]);
+  
   const intersectionStyle = {
     color: "red", // Couleur de la bordure
     weight: 1, // Épaisseur de la bordure
@@ -611,7 +701,7 @@ const Home = () => {
   };
   
   // Calculate the center based on the first feature's coordinates
-  const initialCenter = geojsonContents[0]?.features[0]?.geometry?.coordinates[0][0][0] || [3.868177, 11.519596];
+  //const initialCenter = geojsonContents[0]?.features[0]?.geometry?.coordinates[0][0][0] || [3.86929756871891, 16.029131742598274]//[3.868177, 11.519596];
 
   return (
     <div className="w-full h-full">
@@ -713,6 +803,18 @@ const Home = () => {
         
         { isPopupVisible ? 
           <MessageBox content={popupMessage} /> : ``
+        }
+
+        { isCWPVisible ? 
+          <CreateWorkspacePopup /> : ``
+        }
+        
+        { isSLPVisible ? 
+          <SelectLayerPopup /> : ``
+        }
+
+        { isSWPVisible ? 
+          <SelectWorkspacePopup /> : ``
         }
         
       {/* {geojsonContents.map((geojson, index) => (
