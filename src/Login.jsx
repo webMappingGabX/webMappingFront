@@ -10,9 +10,13 @@ const Login = () => {
 
   const goToHome = useRef(null);
 
+  const loginBtnRef = useRef(null);
+
   const handleLogin = (e) => {
     e.preventDefault();
     
+    loginBtnRef.current.disabled = true;
+
     const results = axios.post('auth/login', {
       email: email,
       password: password 
@@ -25,11 +29,14 @@ const Login = () => {
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
         goToHome.current.click();
+        loginBtnRef.current.disabled = false;
       } else {
         setMessage("Erreur lors de la connexion- : " + response.data.message);
+        loginBtnRef.current.disabled = false;
       }
     }).catch(error => {
       setMessage("Nom d'utilisateur ou mot de passe incorrect");
+      loginBtnRef.current.disabled = false;
     });
     
   }
@@ -83,6 +90,7 @@ const Login = () => {
             type="submit"
             className="w-full px-4 py-2 text-white bg-indigo-600 rounded-md cursor-pointer hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onClick={(e) => handleLogin(e)}
+            ref={loginBtnRef}
           >
             Connexion
           </button>

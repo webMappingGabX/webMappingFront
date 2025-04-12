@@ -11,6 +11,8 @@ const Register = () => {
 
   const goToLogin = useRef(null);
   
+  const registerBtnRef = useRef(null);
+
   const handleRegister = (e) => {
       e.preventDefault();
       
@@ -19,6 +21,7 @@ const Register = () => {
           return;
       }
       
+      registerBtnRef.current.disabled = true;
       const results = axios.post('auth/register', {
         name: name,
         email: email,
@@ -29,14 +32,17 @@ const Register = () => {
           //setMessage("Enregistrement réussi !");
           window.localStorage.setItem("currentWorkspace", response.data.workspace.id);
           goToLogin.current.click();
+          registerBtnRef.current.disabled = false;
         } else {
           setMessage(response.data.message);
+          registerBtnRef.current.disabled = false;
         }
       }).catch(error => {
         console.log("error", error)
         // .response.data.error.errors[0].message
         const finalMsg = error.response.data.error.original == undefined ? "Adresse email incorrecte" : "email déjà utilisé";//error.response.data.error.original.detail;
         setMessage(finalMsg);
+        registerBtnRef.current.disabled = false;
       });
   }
 
@@ -93,6 +99,7 @@ const Register = () => {
             type="submit"
             className="w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-md cursor-pointer hover:bg-indigo-700 focus:outline-none focus:ring focus:ring-indigo-200"
             onClick={(e) => handleRegister(e)}
+            ref={registerBtnRef}
           >
             S&apos;enregistrer
           </button>

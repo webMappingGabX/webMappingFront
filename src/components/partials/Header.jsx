@@ -46,6 +46,7 @@ export default function Header() {
         generatePDFBtnRef,
         saveBtnRef,
         cropBtnRef,
+        uploadBtnRef,
         cancelSelectionBtnRef,
         editionActiveLayer,
         currentWorspaceIdx, setCurrentWorspaceIdx,
@@ -223,6 +224,7 @@ export default function Header() {
           return;
         }
         
+        uploadBtnRef.current.disabled = true;
         const convertCoordinates = (geojson, sourceProj = "EPSG:32632") => {
             //const sourceProj = "EPSG:32632";
             const destProj = "EPSG:4326";
@@ -309,12 +311,14 @@ export default function Header() {
           uploadGeojsonBtn.current.value = null;
           setIsPopupVisible(true);
           setPopupMessage("Données geojson chargées avec succès");
+          uploadBtnRef.current.disabled = false;
 
           setTimeout(() => {
             window.location.reload();
           }, 1000);
         } catch (error) {
           console.error(error);
+          uploadBtnRef.current.disabled = false;
         }
     };
 

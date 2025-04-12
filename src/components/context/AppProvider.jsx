@@ -42,6 +42,7 @@ const AppProvider = ({ children }) => {
     const cropBtnRef = useRef(null);
     const cancelSelectionBtnRef = useRef(null);
     const generatePDFBtnRef = useRef(null);
+    const uploadBtnRef = useRef(null);
 
     const createWorkspaceBtnRef = useRef(null);
     const selectWorkspaceBtnRef = useRef(null);
@@ -102,7 +103,8 @@ const AppProvider = ({ children }) => {
         cropBtnRef,
         cancelSelectionBtnRef,
         createWorkspaceBtnRef,
-        selectWorkspaceBtnRef
+        selectWorkspaceBtnRef,
+        uploadBtnRef
     };
 
   return <appMainContext.Provider value={value}>{children}</appMainContext.Provider>;
