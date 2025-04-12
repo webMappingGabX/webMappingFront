@@ -36,8 +36,8 @@ const Login = () => {
 
   return (
     <div className="flex items-start justify-center min-h-screen bg-gray-200">
-      <div className="w-full max-w-md p-8 mt-8 space-y-6 bg-gray-100 rounded shadow-md">
-        <h2 className="text-2xl font-bold text-center">Connexion</h2>
+      <div className="w-full max-w-md px-4 py-8 mx-3 mt-8 space-y-6 bg-gray-100 rounded shadow-md md:px-8">
+        <h2 className="text-lg font-bold text-center md:text-2x">Connexion</h2>
         <form className="space-y-4">
           { message !== "" && 
             (
@@ -88,7 +88,7 @@ const Login = () => {
           </button>
 
           <div className="text-sm">
-              <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">Je n&apos;ai pas de comptef</a>
+              <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">Je n&apos;ai pas de compte</a>
           </div>
           
           <div className="hidden text-sm">

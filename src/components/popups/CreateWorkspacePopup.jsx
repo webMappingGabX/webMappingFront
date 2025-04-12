@@ -37,7 +37,7 @@ const CreateWorkspacePopup = () => {
             
             setMessage("Espace de travail créé avec succès");
 
-            window.localStorage.setItem("currentWorkspace", JSON.stringify({ id: idx }));
+            window.localStorage.setItem("currentWorkspace", idx);
             
             setTimeout(() => {
                 setCurrentWorspaceIdx(idx);
@@ -52,10 +52,12 @@ const CreateWorkspacePopup = () => {
     return (
         <>
             {/* popup back */}
-            <div className="fixed z-[3000] bg-gray-700 opacity-70 top-0 left-0 bottom-0 right-0" onClick={handleHidePopup}></div>
+            <div className="fixed z-[3000] bg-gray-700 opacity-70 top-0 left-0 bottom-0 right-0"></div>
 
-            <div className="fixed z-[3001] shadow-md flex flex-col w-[90%] md:w-[400px] rounded-md space-y-6 p-8 bg-gray-100 top-1/2 left-1/2 -translate-1/2">
-                <h2 className="text-lg font-bold text-center md:text-2xl">Creer un espace de travail</h2>
+            <div className="fixed z-[3001] shadow-md flex flex-col w-[90%] md:w-[400px] rounded-md space-y-6 p-8 bg-gray-100 top-1/2 left-1/2 -translate-1/2 cursor-default">
+                <div className="absolute text-lg text-gray-400 cursor-pointer right-5 top-3 md:text-xl hover:text-gray-700" onClick={handleHidePopup}>X</div>
+                
+                <h2 className="mt-6 text-lg font-bold text-center md:text-2xl">Creer un espace de travail</h2>
                 <form className="space-y-4">
                     <div className="my-4 text-lg text-green-400 animate-bounce">
                         {message !== `` ? message : ``}

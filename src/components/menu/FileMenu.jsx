@@ -1,4 +1,4 @@
-import { FaCheck, FaHandPointer, FaPlug, FaPlus, FaUpload } from "react-icons/fa";
+import { FaCheck, FaHandPointer, FaPlus, FaUpload } from "react-icons/fa";
 import { useAppMainContext } from "../context/AppProvider";
 
 const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload, handleFileChange, handleUploadgeoJsonFile, workspaces, layerNameRef }) => {
@@ -12,15 +12,15 @@ const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload
                 
                 <h3 className="p-2 mb-1 text-lg font-semibold md:text-xl">Espace de travail</h3>
                 <div className="text-sm md:text-lg">
-                    <strong>{workspaceInfos.name}</strong>
-                    <div>{workspaceInfos.description}</div>
+                    <strong>{workspaceInfos ? workspaceInfos.name : `No Workspace`}</strong>
+                    <div>{workspaceInfos ? workspaceInfos.description : `No Workspace Description`}</div>
                 </div>
                 
-                <button onClick={CreateWorkspaceHandle} className="flex flex-row items-center mt-4 text-lg transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950">
+                <button onClick={CreateWorkspaceHandle} className="flex flex-row items-center mt-4 text-sm transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950">
                     <FaPlus  className="mr-4" />
                     Creer un nouvel espace de travail
                 </button>
-                <button onClick={SelectWorkspaceHandle} className="flex flex-row items-center mt-4 text-lg transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950">
+                <button onClick={SelectWorkspaceHandle} className="flex flex-row items-center mt-4 text-sm transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950">
                     <FaHandPointer  className="mr-4" />
                     Sélectionner un espace de travail
                 </button>     
@@ -28,7 +28,7 @@ const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload
             </div>
             <div className="p-4 mt-2 space-y-2 bg-blue-300 rounded-md shadow-md">
                 
-                <button className="flex flex-row items-center text-lg transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950" 
+                <button className="flex flex-row items-center text-sm transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950" 
                     onClick={(e) => SelectLayersHandle(e)} >
                     <FaCheck  className="mr-4" />
                     Sélectionner les couches à afficher
@@ -36,7 +36,7 @@ const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload
             </div>
             <div className="p-4 mt-2 space-y-2 bg-blue-300 rounded-md shadow-md">
                 
-                <button className="flex flex-row items-center text-lg transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950" 
+                <button className="flex flex-row items-center text-sm transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950" 
                     onClick={(e) => handleUploadgeoJsonFile(e)}>
                     <FaUpload  className="mr-4" />
                     Ajouter une couche

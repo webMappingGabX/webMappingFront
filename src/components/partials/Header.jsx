@@ -9,6 +9,9 @@ import proj4 from "proj4";
 import { saveAs } from "file-saver";
 import FileMenu from "../menu/FileMenu";
 import EditionMenu from "../menu/EditionMenu";
+import AnalyzeMenu from "../menu/AnalyzeMenu";
+import MapMenu from "../menu/MapMenu";
+import WorkspaceMenu from "../menu/WorkspaceMenu";
 
 const LAYER_URL = "layers";
 
@@ -22,7 +25,6 @@ export default function Header() {
     //const uploadGeojsonBtn = useRef(null);
     const [headerFixed, setHeaderFixed] = useState(false);
     const [mainHeaderHeight, setMaiHeaderHeight] = useState(0);
-    const [activeMenu, setActiveMenu] = useState(-1);
     const [isActionsVisible, setIsActionVisible] = useState(false);
 
     const [workspaces, setWorkspaces] = useState([]);
@@ -34,6 +36,7 @@ export default function Header() {
         fileSize, setFileSize,
         fileToUpload, setFileToUpload,
         coordSys, setCoordSys,
+        activeMenu, setActiveMenu,
         isGeneratingPDF, setIsGeneratingPDF,
         isPopupVisible, setIsPopupVisible,
         popupMessage, setPopupMessage,
@@ -42,6 +45,8 @@ export default function Header() {
         intersectionsArea,
         generatePDFBtnRef,
         saveBtnRef,
+        cropBtnRef,
+        cancelSelectionBtnRef,
         editionActiveLayer,
         currentWorspaceIdx, setCurrentWorspaceIdx,
         currentLayersIdx
@@ -60,7 +65,7 @@ export default function Header() {
         const upperHeader = upperHeaderRef.current;
         const mainHeader = mainHeaderRef.current;
 
-        setCurrentWorspaceIdx(JSON.parse(window.localStorage.getItem("currentWorkspace"))?.id);
+        setCurrentWorspaceIdx(JSON.parse(window.localStorage.getItem("currentWorkspace")));
         let layersIdx = window.localStorage.getItem("currentLayers");
         setCurrentLayersIdx(layersIdx != null && layersIdx != '' ? JSON.parse(layersIdx) : []);
         const handleScroll = () => {
@@ -147,8 +152,7 @@ export default function Header() {
                 let currentWorkspace = 0;
                 if(workspaceStorage != null && workspaceStorage != undefined)
                 {
-                    let storeDatas = JSON.parse(workspaceStorage);
-                    currentWorkspace = storeDatas.id;
+                    currentWorkspace = workspaceStorage;
                 } else currentWorkspace = response.data[0].id;
 
                 console.log("RESPONSE", response.data);
@@ -263,9 +267,9 @@ export default function Header() {
         };
 
         //const existingLayers = geojsonContents.map(layer => layer.features).flat();
-        const existingLayers = geojsonContents.map(layer => layer.features).flat();
+        // const existingLayers = geojsonContents.map(layer => layer.features).flat();
         //const existingLayers = features;
-        updatedGeojson.features = [...existingLayers, ...updatedGeojson.features];
+        // updatedGeojson.features = [...existingLayers, ...updatedGeojson.features];
         const uniqueFeatures = [];
         const featureIds = new Set();
 
@@ -336,33 +340,33 @@ export default function Header() {
                     onClick={handleShowMenuClick}
                 ><FaAlignJustify /></button>
 
-                <a href="" className="flex flex-row items-center text-xl font-bold md:text-3xl">
-                    <div className="px-4 py-2 md:py-4 text-2xl md:text-[50px] mr-1 rounded-md">Web Mapping GabX</div>
+                <a href="" className="flex flex-row items-center text-lg font-bold md:text-2xl">
+                    <div className="px-4 py-2 md:py-4 text-lg md:text-[30px] mr-1 rounded-md">Web Mapping GabX</div>
                 </a>
                 
                 {authToken ? (
-                    <nav className="flex-row hidden mt-10 lg:flex">
-                        <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                    <nav className="flex-row hidden mt-10 text-sm lg:flex">
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 0)}>
                             <FaFile className="mr-3" /> Fichiers
                         </a>
-                        <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 1)}>
                             <FaEdit className="mr-3" /> Edition
                         </a>
-                        <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 2)}>
                             <FaDiagnoses className="mr-3" /> Analyses
                         </a>
-                        <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 3)}>
                             <FaMap className="mr-3" /> Carte
                         </a>
-                        <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 4)}>
-                            <FaTable className="mr-3" /> Espaces de travail
+                            <FaTable className="mr-3" /> Espace de travail
                         </a>
-                        <a className="flex items-center px-4 py-2 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
+                        <a className="flex items-center px-4 py-2 font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
                             onClick={handleLogout}>
                             <FaLock className="mr-3" /> Deconnexion
                         </a>
@@ -411,62 +415,18 @@ export default function Header() {
                             saveBtnRef={saveBtnRef}
                         /> : `` }
 
-                        { activeMenu == 2 ? (
-                            <>
-                                <h3 className="mb-3 text-2xl font-semibold text-blue-950">Analyses</h3>
-                                <div className="flex flex-col mt-2 space-y-2">
-                                    {/* <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400">
-                                        <FaChartArea className="mr-3 text-xl md:text-3xl" />
-                                        <div className="mt-3 text-sm md:text-lg">
-                                            Calculer la surface d&apos;un empietement
-                                        </div>
-                                    </button>
+                        { activeMenu == 2 ? <AnalyzeMenu 
+                            intersectionsArea={intersectionsArea}
+                            cropBtnRef={cropBtnRef}
+                            cancelSelectionBtnRef={cancelSelectionBtnRef}
+                        /> : `` }
 
-                                    <button className="flex flex-col items-center px-4 py-2 mr-4 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400">
-                                        <FaCalculator className="mr-3 text-xl md:text-3xl" />
-                                        <div className="mt-3 text-sm md:text-lg">
-                                            Calculer la surface totale de tous les empietements
-                                        </div>
-                                    </button> */}
-                                    <div><div className="text-semibold">Surface totale de tous les empietements : </div> <div className="font-semibold, font-mono text-green-700">{intersectionsArea.toFixed(4)} m<sup>2</sup></div> </div>
-                                </div>
-                            </>
-                        ) : `` }
+                        { activeMenu == 3 ? <MapMenu 
+                            isGeneratingPDF={isGeneratingPDF}
+                            handleGeneratePdf={handleGeneratePdf}
+                        /> : `` }
 
-                        { activeMenu == 3 ? (
-                            <div className="mt-2 space-y-2">
-                                <h3 className="mb-3 text-2xl font-semibold text-blue-950">Carte</h3>
-                                {/* <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400">
-                                    <FaUnlock className="mr-3" /> Capturer la carte
-                                </a> */}
-                                <button 
-                                    className="flex items-center px-4 py-2 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
-                                    disabled={isGeneratingPDF}
-                                    onClick={(e) => handleGeneratePdf(e)}>
-                                    <FaFilePdf className="mr-3" /> 
-                                    {isGeneratingPDF ? 'Génération en cours...' : 'Générer un PDF à partir de la vue actuelle'}
-                                </button>
-                            </div>
-                        ) : `` }
-
-                        { activeMenu == 4 ? (
-                            <div className="mt-2 space-y-2">
-                                <h3 className="mb-3 text-2xl font-semibold text-blue-950">Espaces de travail</h3>
-                                {/* <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400">
-                                    <FaUnlock className="mr-3" /> Capturer la carte
-                                </a> */}
-                                <div>
-
-                                </div>
-                                <button 
-                                    className="flex items-center px-4 py-2 text-lg font-semibold rounded-md cursor-pointer text-blue-950 hover:bg-blue-400"
-                                    disabled={isGeneratingPDF}
-                                    onClick={(e) => handleGeneratePdf(e)}>
-                                    <FaFilePdf className="mr-3" /> 
-                                    {isGeneratingPDF ? 'Génération en cours...' : 'Générer un PDF à partir de la vue actuelle'}
-                                </button>
-                            </div>
-                        ) : `` }
+                        { activeMenu == 4 ? <WorkspaceMenu /> : `` }
                     </div>
             </div>
 
@@ -482,29 +442,29 @@ export default function Header() {
                     onClick={handleHideMenuClick}
                 >X</button>
 
-                <h1 className="mt-10 ml-8 text-2xl">OPTIONS</h1>
-                <nav className="flex flex-col mt-10 space-y-4">
-                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                <h1 className="mt-10 ml-8 text-xl">OPTIONS</h1>
+                <nav className="flex flex-col mt-6 space-y-4 text-sm">
+                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                         onClick={(e) => handleActivateMenu(e, 0)}>
                         <FaFile className="mr-3" /> Fichiers
                     </a>
-                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                         onClick={(e) => handleActivateMenu(e, 1)}>
                         <FaEdit className="mr-3" /> Edition
                     </a>
-                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                         onClick={(e) => handleActivateMenu(e, 2)}>
                         <FaDiagnoses className="mr-3" /> Analyses
                     </a>
-                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                         onClick={(e) => handleActivateMenu(e, 3)}>
                         <FaMap className="mr-3" /> Carte
                     </a>
-                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
                             onClick={(e) => handleActivateMenu(e, 4)}>
-                            <FaTable className="mr-3" /> Espaces de travail
+                            <FaTable className="mr-3" /> Espace de travail
                     </a>
-                    <a href="#" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400" onClick={handleLogout}>
+                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400" onClick={handleLogout}>
                         <FaLock className="mr-3" /> Deconnexion
                     </a>
                 </nav>

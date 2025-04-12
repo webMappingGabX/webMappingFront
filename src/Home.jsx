@@ -1,9 +1,9 @@
+import L, { featureGroup } from "leaflet";
 import { FeatureGroup, MapContainer, TileLayer, useMap, GeoJSON } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
-import 'leaflet/dist/leaflet.css';
-import "leaflet-draw/dist/leaflet.draw.css";
-import L, { featureGroup } from "leaflet";
 import "leaflet-draw";
+import "leaflet-draw/dist/leaflet.draw.css";
+import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState } from "react";
 import PropTypes from 'prop-types';
 import { useAppMainContext } from "./components/context/AppProvider";
@@ -15,6 +15,9 @@ import MessageBox from "./components/popups/MessageBox";
 import CreateWorkspacePopup from "./components/popups/CreateWorkspacePopup";
 import SelectWorkspacePopup from "./components/popups/SelectWorkspacePopup";
 import SelectLayerPopup from "./components/popups/SelectLayerPopup";
+import ManageAccessPopup from "./components/popups/ManageAccessPopup";
+import flecheNord from "./assets/nord.png";
+
 
 // Fix Leaflet icon issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -104,12 +107,18 @@ const Home = () => {
     isSWPVisible, setIsSWPVisible,
     isCWPVisible, setIsCWPVisible,
     isSLPVisible, setIsSLPVisible,
+    isMAPVisible, setIsMAPVisible,
     popupMessage, setPopupMessage,
     coordSys, setCoordSys,
-    setIntersectionsArea,
+    intersectionsArea, setIntersectionsArea,
     editionActiveLayer,
     currentLayersIdx, setCurrentLayersIdx,
+    activeMenu, setActiveMenu,
+    
     saveBtnRef,
+    cropBtnRef,
+    cancelSelectionBtnRef,
+    
     currentWorspaceIdx,
     generatePDFBtnRef,
    } = useAppMainContext();
@@ -126,6 +135,8 @@ const Home = () => {
   const UPLOAD_URL = "/geodatas/upload";
 
   const GEODATAS_URL = "/geodatas";
+
+  let totalAreaBeforeSelection = 0;
 
   // Composant interne pour gérer la carte et le screenshoter
   const MapScreenShotController = () => {
@@ -260,6 +271,112 @@ const Home = () => {
     }
   };
 
+  const handleSelectionMode = () => {
+    handleUnselectAll();
+    if (!featureGroupRef.current || !featureGroupRef.current._map) {
+      console.error("FeatureGroup or map is not available");
+      return;
+    }
+
+    totalAreaBeforeSelection = intersectionsArea;
+
+    const map = featureGroupRef.current._map;
+
+    // First disable any existing drawing modes
+    if (map._drawToolbar) {
+      map._drawToolbar.disable();
+    }
+
+    // Enable selection mode
+    const selectionHandler = new L.Draw.Rectangle(map, {
+      shapeOptions: {
+        color: 'lightblue',
+        weight: 2,
+        fillOpacity: 0.5,
+      },
+
+      // Add these options to prevent tooltip issues
+      showArea: false, // Disable area display in tooltip
+      metric: false, // Disable metric measurements
+      repeatMode: false // Disable repeat mode
+    });
+
+    // Handle errors during enable
+    try {
+      selectionHandler.enable();
+    } catch (error) {
+      console.error("Error enabling selection mode:", error);
+      return;
+    }
+
+    map.once('draw:created', (event) => {
+      const bounds = event.layer.getBounds();
+      const selectedFeatures = [];
+
+      featureGroupRef.current.eachLayer((layer) => {
+        if (layer instanceof L.Polygon || layer instanceof L.Marker || layer instanceof L.Polyline) {
+          if (bounds.contains(layer.getBounds ? layer.getBounds().getCenter() : layer.getLatLng())) {
+            selectedFeatures.push(layer);
+            layer.setStyle({ color: 'green', fillColor: 'green', fillOpacity: 0.5 });
+          }
+        }
+      });
+
+      console.log("Selected Features:", selectedFeatures);
+      
+      // Clean up
+      try {
+        selectionHandler.disable();
+        map.removeLayer(event.layer); // Remove the selection rectangle
+
+        // Calculate the total intersection area only for selected features
+        let totalIntersectionArea = 0;
+
+        const correspondingIntersections = intersections.filter(intersection => {
+          return selectedFeatures.some(feature => 
+            turf.booleanEqual(feature.toGeoJSON(), intersection.polygon1) || 
+            turf.booleanEqual(feature.toGeoJSON(), intersection.polygon2)
+          );
+        });
+
+        correspondingIntersections.forEach(intersection => {
+          totalIntersectionArea += intersection.area;
+        });
+
+        setIntersectionsArea(totalIntersectionArea);
+      } catch (error) {
+        console.error("Error cleaning up selection mode:", error);
+      }
+    });
+
+    // Add error handler for draw events
+    map.once('draw:error', (error) => {
+      console.error("Drawing error:", error);
+      selectionHandler.disable();
+    });
+  };
+
+  const handleUnselectAll = () => {
+  if (!featureGroupRef.current) {
+    console.error("FeatureGroup is not available");
+    return;
+  }
+
+  featureGroupRef.current.eachLayer((layer) => {
+    // Reset style for all layers
+      if (layer instanceof L.Polygon || layer instanceof L.Marker || layer instanceof L.Polyline) {
+        layer.setStyle({
+          color: 'blue', // blue borders
+          weight: 2,
+          fillColor: 'blue', // Blue background
+          fillOpacity: 0.3, // Transparent background
+        });
+      }
+    });
+
+    console.log("All features unselected");
+  };
+
   // Importer les donnees geojson
   const importGeoJSON = async (event) => {
 
@@ -337,7 +454,7 @@ const Home = () => {
   }, [geojsonLayers]);
 
   const fetchGeojsonData = async () => {
-    let wIdx = JSON.parse(window.localStorage.getItem("currentWorkspace"))?.id | 0;
+    let wIdx = JSON.parse(window.localStorage.getItem("currentWorkspace")) | 0;
 
     try {
       const response = await axios.get(GEODATAS_URL, {
@@ -406,12 +523,18 @@ const Home = () => {
   };
   
   const handleLayerEditing = (e) => {
-    const layers = e.layers.getLayers();
+    /*const layers = e.layers.getLayers();
     if (layers.length > 0) {
       const editedGeoJSON = layers[0].toGeoJSON();
       setActiveLayer(editedGeoJSON);
       console.log("Couche éditée:", editedGeoJSON);
-    }
+    }*/
+    const layers = e.layers;
+    layers.eachLayer((layer) => {
+      const editedGeoJSON = layer.toGeoJSON();
+      setActiveLayer(editedGeoJSON);
+      console.log("Edited layer:", editedGeoJSON);
+    });
   };
 
   const dynamicStyle = (feature) => {
@@ -518,7 +641,7 @@ const Home = () => {
       });
     };
 
-  useEffect(() => {
+  const recomputeTotalArea = () => {
     if (intersections.length > 0 && featureGroupRef.current) {
       // Supprimer les anciennes intersections pour éviter les doublons
       featureGroupRef.current.eachLayer((layer) => {
@@ -549,74 +672,15 @@ const Home = () => {
 
       setIntersectionsArea(total);
     }
+  }
+
+  useEffect(() => {
+    recomputeTotalArea();
   }, [intersections]);
 
   // Fonction pour générer le PDF
+
   /*const generatePDF = async () => {
-    if (!screenshoterRef.current) {
-      console.error("Screenshoter non initialisé");
-      return;
-    }
-
-    try {
-      setIsGeneratingPDF(true);
-
-      const map = featureGroupRef.current._map;
-      map.invalidateSize(); // Forcer un redimensionnement de la carte
-      
-      // Attendre que les tuiles soient chargées
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Capturer la carte en tant qu'image
-      const imageBlob = await screenshoterRef.current.takeScreen("blob");
-
-      // Convertir l'image en URL
-      const imageUrl = URL.createObjectURL(imageBlob);
-
-      // Créer un élément Image pour obtenir les dimensions de l'image
-      const img = new Image();
-      img.src = imageUrl;
-
-      // Attendre que l'image soit chargée
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-      });
-      
-      // Créer un nouveau document PDF
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      
-      // Ajouter un titre au PDF
-      pdf.setFontSize(16);
-      pdf.text("Carte Parcellaire", 105, 15, { align: "center" });
-
-      // Ajouter la date de génération
-      pdf.setFontSize(10);
-      const date = new Date().toLocaleDateString();
-      pdf.text(`Généré le: ${date}`, 105, 22, { align: "center" });
-
-      // Définir les dimensions de l'image dans le PDF
-      //const imgWidth = 190; // Largeur de l'image en mm (A4 - marges)
-      const pageWidth = 190;
-      const imgWidth = 150; // Largeur de l'image en mm (A4 - marges)
-      const imgHeight = (imgWidth * img.height) / img.width; // Conserver le ratio
-
-      // Ajouter l'image de la carte au PDF
-      //pdf.addImage(img, "PNG", 10, 30, imgWidth, imgHeight);
-      pdf.addImage(img, "PNG", pageWidth - imgWidth, 30, imgWidth, imgHeight);
-
-      // Télécharger le PDF
-      pdf.save("carte-parcellaire.pdf");
-      setIsGeneratingPDF(false);
-    } catch (error) {
-      console.error("Erreur lors de la génération du PDF:", error);
-      alert("Une erreur est survenue lors de la génération du PDF.");
-      setIsGeneratingPDF(false);
-    }
-  };*/
-  
-  const generatePDF = async () => {
     if (!screenshoterRef.current) {
       console.error("Screenshoter non initialisé");
       return;
@@ -698,11 +762,155 @@ const Home = () => {
       alert("Une erreur est survenue lors de la génération du PDF.");
       setIsGeneratingPDF(false);
     }
+  };*/
+  
+  const generatePDF = async () => {
+    if (!screenshoterRef.current) {
+      console.error("Screenshoter non initialisé");
+      return;
+    }
+  
+    try {
+      setIsGeneratingPDF(true);
+  
+      const map = featureGroupRef.current._map;
+      map.invalidateSize(); // Forcer un redimensionnement de la carte
+  
+      // Attendre que les tuiles soient chargées
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+  
+      // Capturer la carte en tant qu'image
+      const imageBlob = await screenshoterRef.current.takeScreen("blob");
+  
+      // Convertir l'image en URL
+      const imageUrl = URL.createObjectURL(imageBlob);
+  
+      // Créer un élément Image pour obtenir les dimensions de l'image
+      const img = new Image();
+      img.src = imageUrl;
+      // Attendre que l'image soit chargée
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      // Charger l'image de la flèche nord (remplacez par votre propre image)
+      // let northArrowImg = new Image();
+      // northArrowImg.src = './assets/nord.png';
+      //northArrowImg = flecheNord;
+      
+      //await new Promise((resolve, reject) => {
+      //  northArrowImg.onload = resolve;
+      //  northArrowImg.onerror = reject;
+      //});
+  
+      // Créer un nouveau document PDF en orientation paysage
+      const pdf = new jsPDF("l", "mm", "a4");
+  
+      // Définir les marges et les dimensions
+      const margin = 10; // Marge en mm
+      const pageWidth = pdf.internal.pageSize.getWidth() - 2 * margin;
+      const pageHeight = pdf.internal.pageSize.getHeight() - 2 * margin;
+      
+      // Ajouter un titre au PDF
+      pdf.setFontSize(20);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Carte Parcellaire", pageWidth / 2 + margin, 15, { align: "center" });
+
+      // Ajouter la date de génération
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      const date = new Date().toLocaleDateString();
+      pdf.text(`Générée le: ${date}`, pageWidth / 2 + margin, 22, { align: "center" });
+
+      // Calculer les dimensions de la carte (70% de la largeur de la page)
+      const mapWidth = pageWidth * 0.7;
+      //const mapHeight = (mapWidth * img.height) / img.width;
+      const mapHeight = (mapWidth * img.height) / img.width;
+      
+      // Positionner la carte
+      const mapX = margin;
+      const mapY = margin + 30;
+
+      // Ajouter l'image de la carte au PDF
+      //pdf.addImage(img, "PNG", mapX, mapY, mapWidth, mapHeight);
+      pdf.addImage(img, "PNG", mapX, mapY, mapWidth, pageHeight - 30);
+
+      // Ajouter la flèche du nord (en bas à droite de la carte)
+      const arrowSize = 15;
+      pdf.addImage(
+        flecheNord, 
+        "PNG", 
+        mapX + mapWidth - arrowSize + 5, 
+        mapY + arrowSize,  // -5
+        arrowSize, 
+        arrowSize
+      );
+      pdf.setFontSize(8);
+      //pdf.text("N", mapX + mapWidth - arrowSize/2 - 5, mapY + mapHeight - arrowSize - 8, { align: "center" });
+
+      // Zone de légende (30% restant de la largeur)
+      const legendX = mapX + mapWidth + 10;
+      const legendY = mapY;
+      const legendWidth = pageWidth - mapWidth - margin - 10;
+
+      
+      // Dessiner un cadre pour la légende
+      pdf.setDrawColor(200);
+      pdf.setFillColor(240);
+      pdf.rect(legendX, legendY, legendWidth, pageHeight - 30, "FD");
+      
+      // Titre légende
+      pdf.setFontSize(14);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Légende", legendX + legendWidth/2, legendY + 10, { align: "center" });
+
+      // Contenu légende
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      
+      pdf.setTextColor("blue");
+      pdf.text("• Parcelles : Bleu", legendX + 5, legendY + 25);
+      
+      pdf.setTextColor("red");
+      pdf.text("• Empiètements : Rouge", legendX + 5, legendY + 35);
+
+      // Vous pouvez ajouter d'autres éléments de légende ici
+      // pdf.setTextColor("black");
+      // pdf.text("• Autre élément", legendX + 5, legendY + 45);
+  
+      // Télécharger le PDF
+      pdf.save("carte-parcellaire.pdf");
+      setIsGeneratingPDF(false);
+    } catch (error) {
+      console.error("Erreur lors de la génération du PDF:", error);
+      alert("Une erreur est survenue lors de la génération du PDF.");
+      setIsGeneratingPDF(false);
+    }
   };
   
   // Calculate the center based on the first feature's coordinates
   //const initialCenter = geojsonContents[0]?.features[0]?.geometry?.coordinates[0][0][0] || [3.86929756871891, 16.029131742598274]//[3.868177, 11.519596];
 
+  useEffect(() => {
+    const handleEditOrDelete = (e) => {
+      console.log("Edit or delete operation confirmed:", e);
+      exportToGeoJSON();
+    };
+
+    if (featureGroupRef.current && featureGroupRef.current._map) {
+      const map = featureGroupRef.current._map;
+
+      map.on('draw:edited', handleEditOrDelete);
+      map.on('draw:deleted', handleEditOrDelete);
+
+      return () => {
+        map.off('draw:edited', handleEditOrDelete);
+        map.off('draw:deleted', handleEditOrDelete);
+      };
+    }
+  }, [featureGroupRef]);
+  
   return (
     <div className="w-full h-full">
       <div className="absolute top-4 left-4 z-[3000] bg-white p-4 rounded shadow hidden">
@@ -723,6 +931,7 @@ const Home = () => {
         >
           {isGeneratingPDF ? 'Génération en cours...' : 'Générer un PDF à partir de la vue actuelle'}
         </button>
+      
       <input
         type="file"
         accept=".geojson"
@@ -732,6 +941,23 @@ const Home = () => {
       />
 
 
+      <div className="absolute top-4 left-4 z-[3000] bg-white p-4 rounded shadow hidden">
+        <button
+          onClick={handleSelectionMode}
+          ref={cropBtnRef}
+          className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+        >
+          Activer le mode de sélection
+        </button>
+
+        <button
+          onClick={() => { handleUnselectAll(); recomputeTotalArea();}}
+          ref={cancelSelectionBtnRef}
+          className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600"
+        >
+          Deselectionner
+        </button>
+      </div>
 
       {/* {activeLayer && (
         <div className="absolute top-4 right-4 z-[3000] bg-white p-4 rounded shadow">
@@ -793,11 +1019,11 @@ const Home = () => {
           />
         </FeatureGroup>
         
-        <MapController 
+        {/* <MapController 
           featureGroupRef={featureGroupRef} 
           isEditing={isEditing}
           setIsEditing={setIsEditing}
-        />
+        /> */}
 
         <MapScreenShotController />
         
@@ -815,6 +1041,10 @@ const Home = () => {
 
         { isSWPVisible ? 
           <SelectWorkspacePopup /> : ``
+        }
+
+        { isMAPVisible ? 
+          <ManageAccessPopup /> : ``
         }
         
       {/* {geojsonContents.map((geojson, index) => (

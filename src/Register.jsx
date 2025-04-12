@@ -27,6 +27,7 @@ const Register = () => {
       results.then(response => {
         if (response.status === 201 || response.status === 200) {
           //setMessage("Enregistrement réussi !");
+          window.localStorage.setItem("currentWorkspace", response.data.workspace.id);
           goToLogin.current.click();
         } else {
           setMessage(response.data.message);
@@ -41,9 +42,9 @@ const Register = () => {
 
   return (
     <div className="flex items-start justify-center min-h-screen bg-gray-200">
-      <div className="w-full max-w-md p-8 mt-8 space-y-6 bg-gray-100 rounded shadow-md">
-        <h2 className="text-2xl font-bold text-center">Enregistrement</h2>
-        <form className="space-y-4">
+      <div className="w-full max-w-md px-4 py-8 mx-3 mt-8 space-y-6 bg-gray-100 rounded shadow-md md:px-8">
+        <h2 className="text-lg font-bold text-center md:text-2xl">Enregistrement</h2>
+        <form className="space-y-4 text-sm md:text-lg">
           { message !== "" && 
             (
               <div className="text-lg text-red-500">{message}</div>
@@ -59,12 +60,13 @@ const Register = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
             <input
               type="email"
               className="w-full px-3 py-2 mt-1 border border-gray-500 rounded-md focus:outline-none focus:ring focus:ring-indigo-200"
               placeholder="Entrer votre email"
               onChange={(e) => setEmail(e.target.value)}
+              id="email"
               required
             />
           </div>
@@ -78,12 +80,13 @@ const Register = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Confirmer le mot de passe</label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Confirmer le mot de passe</label>
             <input
               type="password"
               className="w-full px-3 py-2 mt-1 border border-gray-500 rounded-md focus:outline-none focus:ring focus:ring-indigo-200"
               placeholder="Confirmer votre mot de passe"
               onChange={(e) => setConfirmPassword(e.target.value)}
+              id="password"
             />
           </div>
           <button

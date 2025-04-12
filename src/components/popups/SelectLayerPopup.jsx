@@ -115,17 +115,19 @@ const SelectLayerPopup = () => {
     return (
         <>
             {/* popup back */}
-            <div className="fixed z-[3000] bg-gray-700 opacity-70 top-0 left-0 bottom-0 right-0" onClick={handleHidePopup}></div>
+            <div className="fixed z-[3000] bg-gray-700 opacity-70 top-0 left-0 bottom-0 right-0"></div>
 
-            <div className="fixed z-[3001] shadow-md flex flex-col rounded-md p-8 bg-white top-1/2 left-1/2 -translate-1/2">
-                <div className="w-full max-w-md p-8 mt-1 space-y-6 bg-gray-100 rounded shadow-md">
+            <div className="fixed z-[3001] shadow-md flex flex-col rounded-md p-4 bg-white top-1/2 left-1/2 -translate-1/2">
+                <div className="absolute text-lg text-gray-400 cursor-pointer right-5 top-3 md:text-xl hover:text-gray-700" onClick={handleHidePopup}>X</div>
+                
+                <div className="w-full max-w-md p-4 mt-6 space-y-6 bg-gray-100 border-gray-300 rounded shadow-md cursor-default">
                     <h2 className="text-lg font-bold text-center md:text-2xl">Selectionner les couches</h2>
                     
                     <div className="my-4 text-lg text-red-400 animate-bounce">
                         {message !== `` ? message : ``}
                     </div>
 
-                    <div ref={checkboxListRef} className="flex flex-col pl-4 space-y-4">
+                    <div ref={checkboxListRef} className="flex flex-col h-[200px] overflow-auto border border-gray-300">
 
                         {layers.length === 0 && (
                             <div className="flex flex-row items-center space-x-2 text-2xl text-gray-600">
@@ -136,7 +138,7 @@ const SelectLayerPopup = () => {
                         
                         {layers.map(layer => {
                             return (
-                                <div key={layer.id} className="flex flex-row items-center space-x-2">
+                                <div key={layer.id} className="flex flex-row items-center p-2 pl-4 space-x-2 bg-gray-200">
                                     <input 
                                         type="checkbox" 
                                         value={layer.id} 
@@ -144,7 +146,7 @@ const SelectLayerPopup = () => {
                                         id={layer.id} 
                                         defaultChecked={currentLayersIdx.includes(layer.id.toString())} 
                                     />
-                                    <label htmlFor={layer.id}>{layer.name}</label>
+                                    <label htmlFor={layer.id} className="flex-1 cursor-pointer">{layer.name}</label>
                                 </div>
                             )
                         })}

@@ -7,7 +7,7 @@ export function useAppMainContext () {
 }
 
 const AppProvider = ({ children }) => {
-    const [activeMenu, setActiveMenu] = useState(0);
+    const [activeMenu, setActiveMenu] = useState(-1);
     const [drawPolygon, setDrawPolygon] = useState(false);
     const [editEntity, setEditEntity] = useState(false);
     const [geojsonContents, setGeojsonContents] = useState([]);
@@ -31,12 +31,16 @@ const AppProvider = ({ children }) => {
     const [ isSLPVisible, setIsSLPVisible ] = useState(false); // if select Layer popup is visible
     const [ iCSLPVisible, setIsCLPVisible ] = useState(false); // if create Layer popup is visible
 
+    const [ isMAPVisible, setIsMAPVisible ] = useState(false); // if manage access popup is visible
+
     const [ currentWorspaceIdx, setCurrentWorspaceIdx ] = useState(null);
     const [ editionActiveLayer, setEditionActiveLayer ] = useState(null);
     const [ currentLayersIdx, setCurrentLayersIdx ] = useState([]);
 
     const uploadGeojsonBtn = useRef(null);
     const saveBtnRef = useRef(null);
+    const cropBtnRef = useRef(null);
+    const cancelSelectionBtnRef = useRef(null);
     const generatePDFBtnRef = useRef(null);
 
     const createWorkspaceBtnRef = useRef(null);
@@ -52,6 +56,10 @@ const AppProvider = ({ children }) => {
 
     const SelectLayersHandle = () => {
         setIsSLPVisible(true);
+    };
+
+    const ManageAccessHandle = () => {
+        setIsMAPVisible(true);
     };
 
     const value = {
@@ -71,6 +79,7 @@ const AppProvider = ({ children }) => {
         createLayerName, setCreateLayerName,
         createLayerDescription, setCreateLayerDescription,
         editionActiveLayer, setEditionActiveLayer,
+        isMAPVisible, setIsMAPVisible,
 
         // Popup
         isPopupVisible, setIsPopupVisible,
@@ -84,11 +93,14 @@ const AppProvider = ({ children }) => {
         CreateWorkspaceHandle,
         SelectWorkspaceHandle,
         SelectLayersHandle,
+        ManageAccessHandle,
 
         // Ref
         uploadGeojsonBtn,
         generatePDFBtnRef,
         saveBtnRef,
+        cropBtnRef,
+        cancelSelectionBtnRef,
         createWorkspaceBtnRef,
         selectWorkspaceBtnRef
     };

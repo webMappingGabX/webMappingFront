@@ -64,7 +64,7 @@ const SelectWorkspacePopup = () => {
             {
                 let idx = selectionRef.current.value;
 
-                window.localStorage.setItem("currentWorkspace", JSON.stringify({ id: idx }));
+                window.localStorage.setItem("currentWorkspace", idx);
 
                 setCurrentWorspaceIdx(idx);
 
@@ -83,18 +83,20 @@ const SelectWorkspacePopup = () => {
     return (
         <>
             {/* popup back */}
-            <div className="fixed z-[3000] bg-gray-700 opacity-70 top-0 left-0 bottom-0 right-0" onClick={handleHidePopup}></div>
+            <div className="fixed z-[3000] bg-gray-700 opacity-70 top-0 left-0 bottom-0 right-0"></div>
 
             <div className="fixed z-[3001] shadow-md flex flex-col rounded-md p-4 bg-white top-1/2 left-1/2 -translate-1/2">
-                <div className="w-full max-w-md p-8 mt-1 space-y-6 bg-gray-100 rounded shadow-md">
-                    <h2 className="text-lg font-bold text-center md:text-2xl">Selectionner un espace de travail</h2>
+                <div className="absolute text-lg text-gray-400 cursor-pointer right-5 top-3 md:text-xl hover:text-gray-700" onClick={handleHidePopup}>X</div>
+                
+                <div className="w-full max-w-md p-8 mt-6 space-y-6 bg-gray-100 rounded shadow-md cursor-default">
+                    <h2 className="text-sm font-bold text-center md:text-xl">Selectionner un espace de travail</h2>
                     
-                    <div className="my-4 text-lg text-red-400 animate-bounce">
+                    <div className="my-4 text-sm text-red-400 md:text-xl animate-bounce">
                         {message !== `` ? message : ``}
                     </div>
 
                     <div>
-                        <select ref={selectionRef} className="w-full px-4 py-3 text-lg border border-gray-700 rounded-lg cursor-pointer md:text-xl hover:bg-gray-200">
+                        <select ref={selectionRef} className="w-full px-4 py-3 text-sm border border-gray-700 rounded-lg cursor-pointer md:text-lg hover:bg-gray-200">
                             {workspaces.map(workspace => {
                                 return (
                                     <option value={workspace.id} key={workspace.id}>
