@@ -7,11 +7,11 @@ VOLUME /tmp
 
 COPY package*.json ./
 
-RUN npm ci
+RUN yarn install --frozen-lockfile
 
 COPY . .
 
-RUN npm run build
+RUN yarn build
 
 FROM nginx:alpine
 
