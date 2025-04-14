@@ -87,20 +87,24 @@ export default function Header() {
     useEffect(() => { 
         setGeojsonContents([]);
 
-        /*geoDatasFiles.forEach(geoDataFile => {
-        axios.get(`uploads/${geoDataFile.filename}`, {
-            headers: {
-              "Content-Type": "application/json"
+        geoDatasFiles.forEach(async (geoDataFile, index) => {
+            try {
+            const response = await axios.get(`files/${geoDataFile.filename}`, {
+                headers: {
+                "Content-Type": "application/json"
+                }
+            });
+            console.log({ "message": "geojson contents block", "response": { "id": geoDataFile.id, ...response.data } });
+            setGeojsonContents((geojsonContents) => {
+                const updatedContents = [...geojsonContents];
+                updatedContents[index] = { "id": geoDataFile.id, ...response.data };
+                return updatedContents;
+            });
+            } catch (error) {
+            console.error('Erreur lors du chargement des fichiers:', error);
             }
-          })
-          .then(response => {
-            console.log({ "message" : "geojson contents block", "response" : { "id" : geoDataFile.id, ...response.data } });
-            //setGeoDatasFilesContent(geoDatasFilesContent => [...geoDatasFilesContent, response.data]);
-            setGeojsonContents(geojsonContents => [...geojsonContents, { "id" : geoDataFile.id, ...response.data }]);
-        })
-            .catch(error => console.error('Erreur lors du chargement des fichiers:', error));
-        })*/
-        geoDatasFiles.forEach(geoDataFile => {
+        });
+        /*geoDatasFiles.forEach(async (geoDataFile) => {
         axios.get(`files/${geoDataFile.filename}`, {
             headers: {
                 "Content-Type": "application/json"
@@ -112,7 +116,7 @@ export default function Header() {
             setGeojsonContents(geojsonContents => [...geojsonContents, { "id" : geoDataFile.id, ...response.data }]);
         })
             .catch(error => console.error('Erreur lors du chargement des fichiers:', error));
-        })
+        })*/
     }, [geoDatasFiles]);
 
     useEffect(() => {

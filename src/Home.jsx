@@ -198,7 +198,9 @@ const Home = () => {
       
       const features = featureGroupLayers[fIdx].map(layer => layer.toGeoJSON());
       
-      //console.log("FEATURES TO SAVE", features);
+      /*console.log("fIdx", fIdx);
+      console.log("FEATURES TO SAVE", features);
+      return;*/
       
       // Remove duplicate features
       const uniqueFeatures = [];
@@ -601,9 +603,13 @@ const Home = () => {
     if (geojsonContents.length > 0) {
       calculateIntersections();
     }
-    console.log({ "message" : "GEO CONTENTS", geojsonContents, featureGroupLayers, featureGroupRef });
+    console.log({ "message" : "GEO CONTENTS", geojsonContents, featureGroupRef });
   }, [geojsonContents]);
   
+  useEffect(() => {
+    console.log({ "message" : "FEATURE GROUP LAYERS", featureGroupLayers, featureGroupRef });
+  }, [featureGroupLayers]);
+
   useEffect(() => {
     if (geojsonContents[0]?.features[0]?.geometry?.type === "Point") {
       setInitialCenter(geojsonContents[0]?.features[0]?.geometry?.coordinates/*.reverse()*/);
