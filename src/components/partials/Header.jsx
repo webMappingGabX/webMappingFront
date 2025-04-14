@@ -224,7 +224,11 @@ export default function Header() {
           return;
         }
         
-        uploadBtnRef.current.disabled = true;
+
+        if (uploadBtnRef.current) {
+            uploadBtnRef.current.disabled = true;
+        }
+        
         const convertCoordinates = (geojson, sourceProj = "EPSG:32632") => {
             //const sourceProj = "EPSG:32632";
             const destProj = "EPSG:4326";
@@ -311,14 +315,18 @@ export default function Header() {
           uploadGeojsonBtn.current.value = null;
           setIsPopupVisible(true);
           setPopupMessage("Données geojson chargées avec succès");
-          uploadBtnRef.current.disabled = false;
+          if (uploadBtnRef.current) {
+                uploadBtnRef.current.disabled = false;
+            }
 
           setTimeout(() => {
             window.location.reload();
           }, 1000);
         } catch (error) {
-          console.error(error);
-          uploadBtnRef.current.disabled = false;
+            console.error(error);
+            if (uploadBtnRef.current) {
+                uploadBtnRef.current.disabled = false;
+            }
         }
     };
 
@@ -446,32 +454,47 @@ export default function Header() {
                     onClick={handleHideMenuClick}
                 >X</button>
 
+
                 <h1 className="mt-10 ml-8 text-xl">OPTIONS</h1>
-                <nav className="flex flex-col mt-6 space-y-4 text-sm">
-                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
-                        onClick={(e) => handleActivateMenu(e, 0)}>
-                        <FaFile className="mr-3" /> Fichiers
-                    </a>
-                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
-                        onClick={(e) => handleActivateMenu(e, 1)}>
-                        <FaEdit className="mr-3" /> Edition
-                    </a>
-                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
-                        onClick={(e) => handleActivateMenu(e, 2)}>
-                        <FaDiagnoses className="mr-3" /> Analyses
-                    </a>
-                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
-                        onClick={(e) => handleActivateMenu(e, 3)}>
-                        <FaMap className="mr-3" /> Carte
-                    </a>
-                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
-                            onClick={(e) => handleActivateMenu(e, 4)}>
-                            <FaTable className="mr-3" /> Espace de travail
-                    </a>
-                    <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400" onClick={handleLogout}>
-                        <FaLock className="mr-3" /> Deconnexion
-                    </a>
-                </nav>
+
+                {authToken ? (
+                    <nav className="flex flex-col mt-6 space-y-4 text-sm">
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                            onClick={(e) => handleActivateMenu(e, 0)}>
+                            <FaFile className="mr-3" /> Fichiers
+                        </a>
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                            onClick={(e) => handleActivateMenu(e, 1)}>
+                            <FaEdit className="mr-3" /> Edition
+                        </a>
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                            onClick={(e) => handleActivateMenu(e, 2)}>
+                            <FaDiagnoses className="mr-3" /> Analyses
+                        </a>
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                            onClick={(e) => handleActivateMenu(e, 3)}>
+                            <FaMap className="mr-3" /> Carte
+                        </a>
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400"
+                                onClick={(e) => handleActivateMenu(e, 4)}>
+                                <FaTable className="mr-3" /> Espace de travail
+                        </a>
+                        <a href="#" className="flex items-center px-4 py-2 font-semibold rounded-md text-blue-950 hover:bg-blue-400" onClick={handleLogout}>
+                            <FaLock className="mr-3" /> Deconnexion
+                        </a>
+                    </nav>
+                ) : (
+                    <nav className="flex flex-col mt-6 space-y-4 text-sm">
+                        <a href="/register" className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400">
+                            <FaUserPlus className="mr-3" /> S&apos;enregistrer
+                        </a>
+
+                        <a href="/" ref={loginScreenRef} className="flex items-center px-4 py-2 text-lg font-semibold rounded-md text-blue-950 hover:bg-blue-400">
+                            <FaKey className="mr-3" /> Se connecter
+                        </a>
+                    </nav>
+                )}
+                
             </div>
         </>
     );

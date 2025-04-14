@@ -1,7 +1,7 @@
 import { FaCheck, FaHandPointer, FaPlus, FaUpload } from "react-icons/fa";
 import { useAppMainContext } from "../context/AppProvider";
 
-const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload, handleFileChange, handleUploadgeoJsonFile, workspaces, layerNameRef }) => {
+const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload, uploadBtnRef, handleFileChange, handleUploadgeoJsonFile, workspaces, layerNameRef }) => {
     let workspaceInfos = workspaces.filter(workspace => workspace.isSelected)[0];
     const { CreateWorkspaceHandle, SelectWorkspaceHandle, SelectLayersHandle } = useAppMainContext();
     
@@ -51,7 +51,8 @@ const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload
                             <p className="flex items-center justify-center my-2 text-blue-950"><span>Nom : </span><input type="text" defaultValue="Nouvelle couche" ref={layerNameRef} className="flex-1 px-2 py-1 ml-3 border rounded-sm"/></p>
                         </div>
                         <button className="flex flex-row items-center justify-center px-6 py-2 mt-3 bg-blue-400 rounded-sm cursor-pointer hover:bg-blue-600"
-                            onClick={handleUpload}>
+                            onClick={handleUpload}
+                            ref={uploadBtnRef}>
                             <FaUpload className="mr-4" />
                             Confirmer
                         </button>

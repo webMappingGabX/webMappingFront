@@ -21,7 +21,9 @@ const Register = () => {
           return;
       }
       
-      registerBtnRef.current.disabled = true;
+      if (registerBtnRef.current) {
+        registerBtnRef.current.disabled = true;
+      }
       const results = axios.post('auth/register', {
         name: name,
         email: email,
@@ -32,17 +34,23 @@ const Register = () => {
           //setMessage("Enregistrement réussi !");
           window.localStorage.setItem("currentWorkspace", response.data.workspace.id);
           goToLogin.current.click();
-          registerBtnRef.current.disabled = false;
+          if (registerBtnRef.current) {
+            registerBtnRef.current.disabled = false;
+          }
         } else {
           setMessage(response.data.message);
-          registerBtnRef.current.disabled = false;
+          if (registerBtnRef.current) {
+            registerBtnRef.current.disabled = false;
+          }
         }
       }).catch(error => {
         console.log("error", error)
         // .response.data.error.errors[0].message
         const finalMsg = error.response.data.error.original == undefined ? "Adresse email incorrecte" : "email déjà utilisé";//error.response.data.error.original.detail;
         setMessage(finalMsg);
-        registerBtnRef.current.disabled = false;
+        if (registerBtnRef.current) {
+          registerBtnRef.current.disabled = false;
+        }
       });
   }
 
