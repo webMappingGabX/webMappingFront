@@ -54,6 +54,10 @@ const EditionMenu = ({ setDrawPolygon, saveBtnRef }) => {
         fetchLayers();
     }, [currentLayersIdx]);
     
+    useEffect(() => {
+        console.log("ACTIVE LAYER", editionActiveLayer)
+    }, [editionActiveLayer]);
+
     const handleSaveModifications = (e) => {
         e.preventDefault();
         if(editionActiveLayer == null)
@@ -85,8 +89,8 @@ const EditionMenu = ({ setDrawPolygon, saveBtnRef }) => {
                 }
                 
                 <select
-                    className="w-full px-4 py-2 text-sm border border-gray-700 rounded-lg cursor-pointer md:text-xl hover:bg-gray-200"
-                    onChange={(e) => setEditionActiveLayer(e.target.value)}
+                    className="w-full px-4 py-2 text-sm border border-gray-700 rounded-lg cursor-pointer md:text-lg hover:bg-gray-200"
+                    onChange={(e) => { setEditionActiveLayer(e.target.value);}}
                 >
                     <option> -- Selectionner un couche -- </option>
                     {layers.map((layer) => (

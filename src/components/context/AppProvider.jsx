@@ -32,6 +32,8 @@ const AppProvider = ({ children }) => {
     const [ iCSLPVisible, setIsCLPVisible ] = useState(false); // if create Layer popup is visible
 
     const [ isMAPVisible, setIsMAPVisible ] = useState(false); // if manage access popup is visible
+    
+    const [ isErrorMessage, setIsErrorMessage ] = useState(false); // specify if popup message is error message
 
     const [ currentWorspaceIdx, setCurrentWorspaceIdx ] = useState(null);
     const [ editionActiveLayer, setEditionActiveLayer ] = useState(null);
@@ -80,8 +82,8 @@ const AppProvider = ({ children }) => {
         createLayerName, setCreateLayerName,
         createLayerDescription, setCreateLayerDescription,
         editionActiveLayer, setEditionActiveLayer,
-        isMAPVisible, setIsMAPVisible,
-
+        isErrorMessage, setIsErrorMessage,
+        
         // Popup
         isPopupVisible, setIsPopupVisible,
         popupMessage, setPopupMessage,
@@ -89,6 +91,7 @@ const AppProvider = ({ children }) => {
         isCWPVisible, setIsCWPVisible,
         isSLPVisible, setIsSLPVisible,
         iCSLPVisible, setIsCLPVisible,
+        isMAPVisible, setIsMAPVisible,
 
         //Handle
         CreateWorkspaceHandle,

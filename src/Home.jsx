@@ -182,9 +182,10 @@ const Home = () => {
     if (featureGroupRef.current) {
       //const layers = featureGroupRef.current.getLayers();
       //const features = layers.map(layer => layer.toGeoJSON());
-      let layersIdx = JSON.parse(localStorage.getItem("currentLayers")) | [];
-      let fIdx = 0;
-      for(let i = 0; i < layersIdx.length; i++)
+      let layersIdx = JSON.parse(localStorage.getItem("currentLayers"));
+      //let layersIdx = currentLayersIdx | [];
+      let fIdx = null;
+      for(let i = 0; i < layersIdx?.length; i++)
       {
           if(layersIdx[i].toString() === editionActiveLayer.toString())
           {
@@ -192,6 +193,8 @@ const Home = () => {
             break;
           }
       }
+      
+      console.log("SELECTED LAYERS", layersIdx);
       
       const features = featureGroupLayers[fIdx].map(layer => layer.toGeoJSON());
       
@@ -489,9 +492,9 @@ const Home = () => {
   };
   
   const startDrawingPolygon = () => {
-    let layersIdx = JSON.parse(localStorage.getItem("currentLayers")) | [];
+    let layersIdx = JSON.parse(localStorage.getItem("currentLayers"));
     let fIdx = 0;
-    for(let i = 0; i < layersIdx.length; i++)
+    for(let i = 0; i < layersIdx?.length; i++)
     {
         if(layersIdx[i].toString() === editionActiveLayer.toString())
         {
@@ -600,7 +603,7 @@ const Home = () => {
     }
     console.log({ "message" : "GEO CONTENTS", geojsonContents, featureGroupLayers, featureGroupRef });
   }, [geojsonContents]);
-
+  
   useEffect(() => {
     if (geojsonContents[0]?.features[0]?.geometry?.type === "Point") {
       setInitialCenter(geojsonContents[0]?.features[0]?.geometry?.coordinates/*.reverse()*/);

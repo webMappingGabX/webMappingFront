@@ -40,6 +40,7 @@ export default function Header() {
         isGeneratingPDF, setIsGeneratingPDF,
         isPopupVisible, setIsPopupVisible,
         popupMessage, setPopupMessage,
+        setIsErrorMessage,
         setCurrentLayersIdx,
         uploadGeojsonBtn,
         intersectionsArea,
@@ -86,13 +87,26 @@ export default function Header() {
     useEffect(() => { 
         setGeojsonContents([]);
 
-        geoDatasFiles.forEach(geoDataFile => {
+        /*geoDatasFiles.forEach(geoDataFile => {
         axios.get(`uploads/${geoDataFile.filename}`, {
             headers: {
               "Content-Type": "application/json"
             }
           })
           .then(response => {
+            console.log({ "message" : "geojson contents block", "response" : { "id" : geoDataFile.id, ...response.data } });
+            //setGeoDatasFilesContent(geoDatasFilesContent => [...geoDatasFilesContent, response.data]);
+            setGeojsonContents(geojsonContents => [...geojsonContents, { "id" : geoDataFile.id, ...response.data }]);
+        })
+            .catch(error => console.error('Erreur lors du chargement des fichiers:', error));
+        })*/
+        geoDatasFiles.forEach(geoDataFile => {
+        axios.get(`files/${geoDataFile.filename}`, {
+            headers: {
+                "Content-Type": "application/json"
+            }
+            })
+            .then(response => {
             console.log({ "message" : "geojson contents block", "response" : { "id" : geoDataFile.id, ...response.data } });
             //setGeoDatasFilesContent(geoDatasFilesContent => [...geoDatasFilesContent, response.data]);
             setGeojsonContents(geojsonContents => [...geojsonContents, { "id" : geoDataFile.id, ...response.data }]);
@@ -219,114 +233,122 @@ export default function Header() {
     const handleUpload = async (e) => {
         e.preventDefault();
         
-        if (!fileToUpload) {
-            console.log("No file to upload");
-          return;
-        }
-        
-
-        if (uploadBtnRef.current) {
-            uploadBtnRef.current.disabled = true;
-        }
-        
-        const convertCoordinates = (geojson, sourceProj = "EPSG:32632") => {
-            //const sourceProj = "EPSG:32632";
-            const destProj = "EPSG:4326";
-
-            let convertedGeojson = JSON.parse(JSON.stringify(geojson));
-            if (geojson.crs?.properties?.name !== "urn:ogc:def:crs:OGC:1.3:CRS84") {
-                convertedGeojson.features.forEach((feature) => {
-                    feature.geometry.coordinates = feature.geometry.coordinates.map((coords) => {
-                        coords[0] = coords[0].map((coord) => {
-                            const [x, y] = proj4(sourceProj, destProj, coord);
-                            return [x, y];
-                        });
-                        
-                        return coords;
-                    });
-                });
-            }
-
-            return convertedGeojson;
-        };
-
-        const originalGeojson = JSON.parse(await fileToUpload.text());
-
-        const currentProjection = originalGeojson.crs?.properties?.name || "Unknown";
-        console.log("Current GeoJSON Projection:", currentProjection);
-        let sourceProj = "EPSG:32632";
-        if (currentProjection.includes("3857") || currentProjection.includes("900913")) {
-            sourceProj = "EPSG:3857"; // Web Mercator
-        } else if (currentProjection.includes("4326") || currentProjection.includes("CRS84")) {
-            sourceProj = "EPSG:4326"; // LatLong
-        }
-        const convertedGeojson = convertCoordinates(originalGeojson, sourceProj);
-        
-        const blob = new Blob([JSON.stringify(convertedGeojson)], { type: "application/json" });
-        const newFile = new File([blob], fileToUpload.name, { type: "application/json" });
-        const updatedGeojson = JSON.parse(await newFile.text());
-        updatedGeojson.crs = {
-            type: "name",
-            properties: {
-                name: "urn:ogc:def:crs:OGC:1.3:CRS84"
-            }
-        };
-
-        //const existingLayers = geojsonContents.map(layer => layer.features).flat();
-        // const existingLayers = geojsonContents.map(layer => layer.features).flat();
-        //const existingLayers = features;
-        // updatedGeojson.features = [...existingLayers, ...updatedGeojson.features];
-        const uniqueFeatures = [];
-        const featureIds = new Set();
-
-        updatedGeojson.features.forEach((feature) => {
-            const featureId = JSON.stringify(feature.geometry.coordinates);
-            if (!featureIds.has(featureId)) {
-            featureIds.add(featureId);
-            uniqueFeatures.push(feature);
-            }
-        });
-
-        updatedGeojson.features = uniqueFeatures;
-        const updatedBlob = new Blob([JSON.stringify(updatedGeojson)], { type: "application/json" });
-        const updatedFile = new File([updatedBlob], newFile.name, { type: "application/json" });
-        //console.log({ "message" : "New File Infos", "proj4Conversion": proj4("EPSG:32632", "EPSG:4326", [ 779856.307984707411379, 427988.729907256143633 ]), "originalGeojson": originalGeojson, "convertedGeojson": convertedGeojson, "newFile": newFile });
-        setFileToUpload(updatedFile);
-        // console.log({ "message" : "FIle to upload", fileToUpload,  convertedGeojson, blob , newFile });
-        const formData = new FormData();
-        formData.append("file", updatedFile);
-        formData.append("name", layerNameRef.current.value);
-        formData.append("description", "Description de la couche");
-        formData.append("workspaceId", currentWorspaceIdx);
-        
         try {
-          const response = await axios.post(UPLOAD_URL, formData, {
-            headers: { "Content-Type": "multipart/form-data",
-                Authorization: `Bearer ${authToken}`
-             },
-          });
+            if (!fileToUpload) {
+                console.log("No file to upload");
+              return;
+            }
+            
     
-          //console.log(response.data);
-          //setUploadedFilename(response.data.file.filename);
-          
-          setFileName("");
-          setFileSize(0);
-          setFileToUpload(null);
-          uploadGeojsonBtn.current.value = null;
-          setIsPopupVisible(true);
-          setPopupMessage("Données geojson chargées avec succès");
-          if (uploadBtnRef.current) {
-                uploadBtnRef.current.disabled = false;
-            }
-
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        } catch (error) {
-            console.error(error);
             if (uploadBtnRef.current) {
-                uploadBtnRef.current.disabled = false;
+                uploadBtnRef.current.disabled = true;
             }
+            
+            const convertCoordinates = (geojson, sourceProj = "EPSG:32632") => {
+                //const sourceProj = "EPSG:32632";
+                const destProj = "EPSG:4326";
+    
+                let convertedGeojson = JSON.parse(JSON.stringify(geojson));
+                if (geojson.crs?.properties?.name !== "urn:ogc:def:crs:OGC:1.3:CRS84") {
+                    convertedGeojson.features.forEach((feature) => {
+                        feature.geometry.coordinates = feature.geometry.coordinates.map((coords) => {
+                            coords[0] = coords[0].map((coord) => {
+                                const [x, y] = proj4(sourceProj, destProj, coord);
+                                return [x, y];
+                            });
+                            
+                            return coords;
+                        });
+                    });
+                }
+    
+                return convertedGeojson;
+            };
+    
+            const originalGeojson = JSON.parse(await fileToUpload.text());
+    
+            const currentProjection = originalGeojson.crs?.properties?.name || "Unknown";
+            console.log("Current GeoJSON Projection:", currentProjection);
+            let sourceProj = "EPSG:32632";
+            if (currentProjection.includes("3857") || currentProjection.includes("900913")) {
+                sourceProj = "EPSG:3857"; // Web Mercator
+            } else if (currentProjection.includes("4326") || currentProjection.includes("CRS84")) {
+                sourceProj = "EPSG:4326"; // LatLong
+            }
+            const convertedGeojson = convertCoordinates(originalGeojson, sourceProj);
+            
+            const blob = new Blob([JSON.stringify(convertedGeojson)], { type: "application/json" });
+            const newFile = new File([blob], fileToUpload.name, { type: "application/json" });
+            const updatedGeojson = JSON.parse(await newFile.text());
+            updatedGeojson.crs = {
+                type: "name",
+                properties: {
+                    name: "urn:ogc:def:crs:OGC:1.3:CRS84"
+                }
+            };
+    
+            //const existingLayers = geojsonContents.map(layer => layer.features).flat();
+            // const existingLayers = geojsonContents.map(layer => layer.features).flat();
+            //const existingLayers = features;
+            // updatedGeojson.features = [...existingLayers, ...updatedGeojson.features];
+            const uniqueFeatures = [];
+            const featureIds = new Set();
+    
+            updatedGeojson.features.forEach((feature) => {
+                const featureId = JSON.stringify(feature.geometry.coordinates);
+                if (!featureIds.has(featureId)) {
+                featureIds.add(featureId);
+                uniqueFeatures.push(feature);
+                }
+            });
+    
+            updatedGeojson.features = uniqueFeatures;
+            const updatedBlob = new Blob([JSON.stringify(updatedGeojson)], { type: "application/json" });
+            const updatedFile = new File([updatedBlob], newFile.name, { type: "application/json" });
+            //console.log({ "message" : "New File Infos", "proj4Conversion": proj4("EPSG:32632", "EPSG:4326", [ 779856.307984707411379, 427988.729907256143633 ]), "originalGeojson": originalGeojson, "convertedGeojson": convertedGeojson, "newFile": newFile });
+            setFileToUpload(updatedFile);
+            // console.log({ "message" : "FIle to upload", fileToUpload,  convertedGeojson, blob , newFile });
+            const formData = new FormData();
+            formData.append("file", updatedFile);
+            formData.append("name", layerNameRef.current.value);
+            formData.append("description", "Description de la couche");
+            formData.append("workspaceId", currentWorspaceIdx);
+            
+            try {
+              const response = await axios.post(UPLOAD_URL, formData, {
+                headers: { "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${authToken}`
+                 },
+              });
+        
+              //console.log(response.data);
+              //setUploadedFilename(response.data.file.filename);
+              
+              setFileName("");
+              setFileSize(0);
+              setFileToUpload(null);
+              uploadGeojsonBtn.current.value = null;
+              setIsPopupVisible(true);
+              setPopupMessage("Données geojson chargées avec succès");
+              if (uploadBtnRef.current) {
+                    uploadBtnRef.current.disabled = false;
+                }
+    
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000);
+            } catch (error) {
+                console.error(error);
+                if (uploadBtnRef.current) {
+                    uploadBtnRef.current.disabled = false;
+                }
+            }
+        } catch (err) {
+            setIsErrorMessage(true);
+            setIsPopupVisible(true);
+            setPopupMessage("Le fichier que vous tentez d'envoyer ne pourra pas être visualiser, le système de projection est inconnu");
+            console.error("ERROR", err);
+            //throw new Error(err);
         }
     };
 

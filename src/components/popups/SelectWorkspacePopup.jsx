@@ -68,7 +68,7 @@ const SelectWorkspacePopup = () => {
 
                 setCurrentWorspaceIdx(idx);
 
-                window.localStorage.setItem("currentLayers", []);
+                window.localStorage.setItem("currentLayers", JSON.stringify([]));
                 setCurrentLayersIdx([]);
 
                 setIsSWPVisible(false);

@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "./components/api/axios";
 import { useAppMainContext } from "./components/context/AppProvider";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [ email, setEmail ] = useState('');
@@ -12,9 +13,18 @@ const Login = () => {
 
   const loginBtnRef = useRef(null);
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const authToken = localStorage.getItem('authToken');
+    if (authToken) {
+      navigate('/home');
+    }
+  }, [navigate]);
+    
   const handleLogin = (e) => {
     e.preventDefault();
-    
+
     if (loginBtnRef.current) {
       loginBtnRef.current.disabled = true;
     }
@@ -29,7 +39,9 @@ const Login = () => {
         //setMessage("Connexion réussi !");
         localStorage.setItem('authToken', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        
+        console.log("LOGIN DATAS", response.data);
+        localStorage.setItem("currentWorkspace", response.data.workspaceIdx);
+
         goToHome.current.click();
         if (loginBtnRef.current) {
           loginBtnRef.current.disabled = false;

@@ -1,10 +1,14 @@
 import { FaCheck, FaHandPointer, FaPlus, FaUpload } from "react-icons/fa";
 import { useAppMainContext } from "../context/AppProvider";
+import { FaNotdef } from "react-icons/fa6";
+import { useRef } from "react";
 
 const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload, uploadBtnRef, handleFileChange, handleUploadgeoJsonFile, workspaces, layerNameRef }) => {
     let workspaceInfos = workspaces.filter(workspace => workspace.isSelected)[0];
     const { CreateWorkspaceHandle, SelectWorkspaceHandle, SelectLayersHandle } = useAppMainContext();
     
+    const BtnToDisable = useRef(null);
+
     return (
         <>
             <h3 className="p-4 mb-3 text-lg font-semibold bg-blue-300 rounded-md shadow-md md:text-2xl text-blue-950">Fichiers</h3>
@@ -25,6 +29,19 @@ const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload
                     Sélectionner un espace de travail
                 </button>     
                 
+                {/* <button onClick={() => {
+                        console.log("BTN TO DISABLE", BtnToDisable);
+                        BtnToDisable.current.disabled = true; 
+                    }} className="flex flex-row items-center mt-4 text-sm transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950">
+                    <FaNotdef  className="mr-4" />
+                    Test Disabled
+                </button>
+
+                <button ref={BtnToDisable} onClick={() => { alert("I'm not disabled") }} className="flex flex-row items-center mt-4 text-sm transition-colors cursor-pointer md:text-xl hover:text-red-700 text-blue-950">
+                    <FaNotdef  className="mr-4" />
+                    Ref To disabled
+                </button> */}
+
             </div>
             <div className="p-4 mt-2 space-y-2 bg-blue-300 rounded-md shadow-md">
                 
@@ -47,7 +64,7 @@ const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload
                             <h4 className="text-lg font-semibold text-blue-950">Informations :</h4>
                             <p className="text-blue-950">Nom : { fileName }</p>
                             <p className="text-blue-950">Taille : { fileSize } KB</p>
-                            <p className="text-blue-950">Système de coordonnées : { coordSys }</p>
+                            <p className="text-blue-950">Système de projection : { coordSys }</p>
                             <p className="flex items-center justify-center my-2 text-blue-950"><span>Nom : </span><input type="text" defaultValue="Nouvelle couche" ref={layerNameRef} className="flex-1 px-2 py-1 ml-3 border rounded-sm"/></p>
                         </div>
                         <button className="flex flex-row items-center justify-center px-6 py-2 mt-3 bg-blue-400 rounded-sm cursor-pointer hover:bg-blue-600"
