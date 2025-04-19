@@ -3,6 +3,8 @@ import axios from "./components/api/axios";
 import { useAppMainContext } from "./components/context/AppProvider";
 import { useNavigate } from "react-router-dom";
 
+const LAYER_URL  = "/layers";
+
 const Login = () => {
   const [ email, setEmail ] = useState('');
   const [ password, setPassword ] = useState('');
@@ -21,7 +23,30 @@ const Login = () => {
       navigate('/home');
     }
   }, [navigate]);
-    
+  
+  const getLayers = async (currentWorspaceIdx, token) => {
+      try {
+          const response = await axios.get(LAYER_URL, {
+              params: {
+                  workspaceId: currentWorspaceIdx
+              },
+              headers: {
+                  Authorization: `Bearer ${token}`
+              }
+          });
+          let layersIdx = [];
+
+          response?.data?.forEach(layer => {
+            layersIdx.push(layer.id.toString())
+          });
+
+          window.localStorage.setItem("currentLayers", JSON.stringify(layersIdx));
+          console.log(response?.data);
+      }catch(err) {
+          console.log(err?.data)
+      }
+  }
+
   const handleLogin = (e) => {
     e.preventDefault();
 
@@ -42,6 +67,8 @@ const Login = () => {
         console.log("LOGIN DATAS", response.data);
         localStorage.setItem("currentWorkspace", response.data.workspaceIdx);
 
+        getLayers(response.data.workspaceIdx, response.data.token);
+        
         goToHome.current.click();
         if (loginBtnRef.current) {
           loginBtnRef.current.disabled = false;
@@ -53,7 +80,7 @@ const Login = () => {
         }
       }
     }).catch(error => {
-      setMessage("Nom d'utilisateur ou mot de passe incorrect");
+      setMessage("Adresse email ou mot de passe incorrect");
       if (loginBtnRef.current) {
         loginBtnRef.current.disabled = false;
       }
