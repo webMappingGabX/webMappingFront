@@ -8,24 +8,24 @@ import Register from './Register';
 function App() {
   return (
     <BrowserRouter>
-            <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-screen">
 
-                {/* En tete */}
-                <Header />
-                
-                {/* Contenu dynamique */}
-                <main className='flex flex-col flex-1 flex-grow'>
-                    <Routes>
-                        <Route path="/" element={<Login />}/>
-                        <Route path="/home" element={<Home />}/>
-                        <Route path="/register" element={<Register />}/>
-                    </Routes>
-                </main>
+            {/* En tete */}
+            <Header />
+            
+            {/* Contenu dynamique */}
+            <main className='flex flex-col flex-1 flex-grow'>
+                <Routes>
+                    <Route path="/" element={<Login />}/>
+                    <Route path="/home" element={<Home />}/>
+                    <Route path="/register" element={<Register />}/>
+                </Routes>
+            </main>
 
-                
-            </div>
-              
-        </BrowserRouter>
+            
+        </div>
+            
+    </BrowserRouter>
   )
 }
 
