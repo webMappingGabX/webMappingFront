@@ -1,10 +1,10 @@
-import { FaPlusCircle, FaSave } from "react-icons/fa";
+import { FaChartLine, FaDrawPolygon, FaLine, FaMapMarker, FaMarker, FaPlusCircle, FaSave } from "react-icons/fa";
 import { useAppMainContext } from "../context/AppProvider";
 import axios from "../api/axios";
 import { useEffect, useState } from "react";
 const LAYER_URL = "/layers";
 
-const EditionMenu = ({ setDrawPolygon, saveBtnRef }) => {
+const EditionMenu = ({ setDrawLine, setDrawMarker, setDrawPolygon, saveBtnRef }) => {
     const { currentLayersIdx, setEditionActiveLayer, editionActiveLayer } = useAppMainContext();
     
     const [layers, setLayers] = useState([]);
@@ -103,19 +103,42 @@ const EditionMenu = ({ setDrawPolygon, saveBtnRef }) => {
             </div>
             <div className="flex flex-col p-4 mt-2 space-y-2 bg-blue-300 rounded-md shadow-md">
                 
-                <button className="flex flex-row items-center px-4 py-2 mr-4 text-sm font-semibold rounded-md cursor-pointer md:text-lg text-blue-950 hover:bg-blue-400"
-                    onClick={() => setDrawPolygon(true)}>
+                <div>
+                    <h4 className="p-2 mb-1 text-sm font-semibold md:text-lg">Ajouter des entités</h4>
+                    
+                    <div className="flex flex-row flex-wrap items-center justify-between">
 
-                    <FaPlusCircle className="mr-4 text-lg md:text-xl" />
-                    Ajouter une nouvelle entites
-                </button>
+                        <button className="flex flex-row items-center px-4 py-2 mr-4 text-sm font-semibold rounded-md cursor-pointer md:text-lg text-blue-950 hover:bg-blue-400"
+                            onClick={() => setDrawPolygon(true)}>         
+                            <FaDrawPolygon className="mr-4 text-lg md:text-xl" />
+                            Polygone
+                        </button>
 
-                <button className="flex flex-row items-center px-4 py-2 mr-4 text-sm font-semibold rounded-md cursor-pointer md:text-xl text-blue-950 hover:bg-blue-400"
-                    onClick={handleSaveModifications}>
+                        <button className="flex flex-row items-center px-4 py-2 mr-4 text-sm font-semibold rounded-md cursor-pointer md:text-lg text-blue-950 hover:bg-blue-400"
+                            onClick={() => setDrawLine(true)}>
 
-                    <FaSave className="mr-4 text-lg md:text-xl" />
-                    Sauvegarder les modifications
-                </button>
+                            <FaChartLine className="mr-4 text-lg md:text-xl" />
+                            Ligne
+                        </button>
+                        <button className="flex flex-row items-center px-4 py-2 mr-4 text-sm font-semibold rounded-md cursor-pointer md:text-lg text-blue-950 hover:bg-blue-400"
+                            onClick={() => setDrawMarker(true)}>
+
+                            <FaMapMarker className="mr-4 text-lg md:text-xl" />
+                            Point
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 className="p-2 mb-1 text-sm font-semibold md:text-lg">Sauvegarder les modifications</h4>
+
+                    <button className="flex flex-row items-center px-4 py-2 mr-4 text-sm font-semibold rounded-md cursor-pointer md:text-xl text-blue-950 hover:bg-blue-400"
+                        onClick={handleSaveModifications}>
+
+                        <FaSave className="mr-4 text-lg md:text-xl" />
+                        Sauvegarder
+                    </button>
+                </div>
             </div>
 
         </>

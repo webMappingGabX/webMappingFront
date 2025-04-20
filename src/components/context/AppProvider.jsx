@@ -9,6 +9,10 @@ export function useAppMainContext () {
 const AppProvider = ({ children }) => {
     const [activeMenu, setActiveMenu] = useState(-1);
     const [drawPolygon, setDrawPolygon] = useState(false);
+
+    const [drawLine, setDrawLine] = useState(false);
+    const [drawMarker, setDrawMarker] = useState(false);
+
     const [editEntity, setEditEntity] = useState(false);
     const [geojsonContents, setGeojsonContents] = useState([]);
     const [ featureGroupLayers, setFeatureGroupLayers ] = useState([]);
@@ -21,6 +25,7 @@ const AppProvider = ({ children }) => {
     const [ isGeneratingPDF, setIsGeneratingPDF ] = useState(false);
     const [ isPopupVisible, setIsPopupVisible ] = useState(false);
     const [ popupMessage, setPopupMessage ] = useState("");
+    const [ popupTitle, setPopupTitle, ] = useState("");
     
     const [ createLayerName, setCreateLayerName ] = useState("");
     const [ createLayerDescription, setCreateLayerDescription ] = useState("");
@@ -48,6 +53,8 @@ const AppProvider = ({ children }) => {
 
     const createWorkspaceBtnRef = useRef(null);
     const selectWorkspaceBtnRef = useRef(null);
+
+    const exportToGeojsonBtnRef = useRef(null);
 
     const CreateWorkspaceHandle = () => {
         setIsCWPVisible(true);
@@ -82,11 +89,14 @@ const AppProvider = ({ children }) => {
         createLayerName, setCreateLayerName,
         createLayerDescription, setCreateLayerDescription,
         editionActiveLayer, setEditionActiveLayer,
-        isErrorMessage, setIsErrorMessage,
+        drawLine, setDrawLine,
+        drawMarker, setDrawMarker,
         
         // Popup
+        isErrorMessage, setIsErrorMessage,
         isPopupVisible, setIsPopupVisible,
         popupMessage, setPopupMessage,
+        popupTitle, setPopupTitle,
         isSWPVisible, setIsSWPVisible,
         isCWPVisible, setIsCWPVisible,
         isSLPVisible, setIsSLPVisible,
@@ -99,6 +109,7 @@ const AppProvider = ({ children }) => {
         SelectLayersHandle,
         ManageAccessHandle,
 
+
         // Ref
         uploadGeojsonBtn,
         generatePDFBtnRef,
@@ -107,7 +118,8 @@ const AppProvider = ({ children }) => {
         cancelSelectionBtnRef,
         createWorkspaceBtnRef,
         selectWorkspaceBtnRef,
-        uploadBtnRef
+        uploadBtnRef,
+        exportToGeojsonBtnRef
     };
 
   return <appMainContext.Provider value={value}>{children}</appMainContext.Provider>;

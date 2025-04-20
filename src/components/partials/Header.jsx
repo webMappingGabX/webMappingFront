@@ -51,7 +51,10 @@ export default function Header() {
         cancelSelectionBtnRef,
         editionActiveLayer,
         currentWorspaceIdx, setCurrentWorspaceIdx,
-        currentLayersIdx
+        currentLayersIdx,
+        setDrawLine,
+        setDrawMarker,
+        exportToGeojsonBtnRef
      } = useAppMainContext();
 
     const [ geoDatasFilesContent, setGeoDatasFilesContent ] = useState([]);
@@ -333,6 +336,7 @@ export default function Header() {
               setFileToUpload(null);
               uploadGeojsonBtn.current.value = null;
               setIsPopupVisible(true);
+              setIsErrorMessage(false);
               setPopupMessage("Données geojson chargées avec succès");
               if (uploadBtnRef.current) {
                     uploadBtnRef.current.disabled = false;
@@ -451,12 +455,15 @@ export default function Header() {
                         { activeMenu == 1 ? <EditionMenu 
                             setDrawPolygon={setDrawPolygon}
                             saveBtnRef={saveBtnRef}
+                            setDrawLine={setDrawLine}
+                            setDrawMarker={setDrawMarker}
                         /> : `` }
 
                         { activeMenu == 2 ? <AnalyzeMenu 
                             intersectionsArea={intersectionsArea}
                             cropBtnRef={cropBtnRef}
                             cancelSelectionBtnRef={cancelSelectionBtnRef}
+                            exportToGeojsonBtnRef={exportToGeojsonBtnRef}
                         /> : `` }
 
                         { activeMenu == 3 ? <MapMenu 

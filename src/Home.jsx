@@ -109,18 +109,24 @@ const Home = () => {
     isSLPVisible, setIsSLPVisible,
     isMAPVisible, setIsMAPVisible,
     popupMessage, setPopupMessage,
+    popupTitle, setPopupTitle,
+    isErrorMessage, setIsErrorMessage,
     coordSys, setCoordSys,
     intersectionsArea, setIntersectionsArea,
     editionActiveLayer,
     currentLayersIdx, setCurrentLayersIdx,
     activeMenu, setActiveMenu,
     
+    drawLine, setDrawLine,
+    drawMarker, setDrawMarker,
+
     saveBtnRef,
     cropBtnRef,
     cancelSelectionBtnRef,
     
     currentWorspaceIdx,
     generatePDFBtnRef,
+    exportToGeojsonBtnRef,
    } = useAppMainContext();
 
   const [activeLayer, setActiveLayer] = useState(null);
@@ -170,12 +176,6 @@ const Home = () => {
 
     return null; // Ce composant ne rend rien
   };
-    
-  useEffect(() => {
-    if (drawPolygon) {
-      startDrawingPolygon();
-    }
-  }, [drawPolygon]);
 
   // Expoter les donnees en geojson
   const exportToGeoJSON = async () => {
@@ -262,6 +262,7 @@ const Home = () => {
         });
         //alert("File uploaded successfully");
         setIsPopupVisible(true);
+        setIsErrorMessage(false);
         setPopupMessage("Données sauvegardées avec succès");
 
         setTimeout(() => {
@@ -319,7 +320,7 @@ const Home = () => {
       const selectedFeatures = [];
 
       featureGroupRef.current.eachLayer((layer) => {
-        if (layer instanceof L.Polygon || layer instanceof L.Marker || layer instanceof L.Polyline) {
+        if (layer instanceof L.Polygon /*|| layer instanceof L.Marker || layer instanceof L.Polyline*/) {
           if (bounds.contains(layer.getBounds ? layer.getBounds().getCenter() : layer.getLatLng())) {
             selectedFeatures.push(layer);
             layer.setStyle({ color: 'green', fillColor: 'green', fillOpacity: 0.5 });
@@ -369,13 +370,16 @@ const Home = () => {
 
   featureGroupRef.current.eachLayer((layer) => {
     // Reset style for all layers
-      if (layer instanceof L.Polygon || layer instanceof L.Marker || layer instanceof L.Polyline) {
+      if (layer instanceof L.Polygon /*|| layer instanceof L.Marker */|| layer instanceof L.Polyline) {
         layer.setStyle({
           color: 'blue', // blue borders
           weight: 2,
           fillColor: 'blue', // Blue background
           fillOpacity: 0.3, // Transparent background
         });
+        /*if(layer.setStyle)
+        {
+        }*/
       }
     });
 
@@ -496,36 +500,152 @@ const Home = () => {
   const startDrawingPolygon = () => {
     let layersIdx = JSON.parse(localStorage.getItem("currentLayers"));
     let fIdx = 0;
-    for(let i = 0; i < layersIdx?.length; i++)
+    try
     {
-        if(layersIdx[i].toString() === editionActiveLayer.toString())
-        {
-          fIdx = i;
-          break;
-        }
+      for(let i = 0; i < layersIdx?.length; i++)
+      {
+          if(layersIdx[i].toString() === editionActiveLayer.toString())
+          {
+            fIdx = i;
+            break;
+          }
+      }
+
+      // Accès à l'instance de la carte via le featureGroupRef
+      if (featureGroupRef.current && featureGroupRef.current._map) {
+        const map = featureGroupRef.current._map;
+        
+        // Listen for the 'draw:created' event to capture the drawn polygon
+        map.on('draw:created', (event) => {
+          const layer = event.layer;
+          let datas = featureGroupLayers;
+          datas[fIdx].push(layer);
+          
+          setFeatureGroupLayers(datas);
+          const drawnPolygon = layer.toGeoJSON(); // Convert the drawn layer to GeoJSON
+          console.log("Drawn Polygon:", drawnPolygon); // Log the polygon to the console
+          // You can now store the drawnPolygon in a state or variable
+        });
+        // Création d'un outil de dessin de polygone
+        const polygonDrawHandler = new L.Draw.Polygon(map);
+        polygonDrawHandler.enable();
+      }
+    } catch (err) {
+      setIsPopupVisible(true);
+      setIsErrorMessage(true);
+      setPopupMessage("Selectionner d'abord la couche a editer");
+    } finally {
+      setDrawPolygon(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (drawPolygon) {
+      startDrawingPolygon();
+    }
+  }, [drawPolygon]);
+
+  const startDrawingLine = () => {
+    let layersIdx = JSON.parse(localStorage.getItem("currentLayers"));
+    let fIdx = 0;
+    try
+    {
+      for(let i = 0; i < layersIdx?.length; i++)
+      {
+          if(layersIdx[i].toString() === editionActiveLayer.toString())
+          {
+            fIdx = i;
+            break;
+          }
+      }
+      // Access the map instance via featureGroupRef
+      if (featureGroupRef.current && featureGroupRef.current._map) {
+        const map = featureGroupRef.current._map;
+  
+        // Listen for the 'draw:created' event to capture the drawn line
+        map.on('draw:created', (event) => {
+          const layer = event.layer;
+          let datas = featureGroupLayers;
+          datas[fIdx].push(layer);
+  
+          setFeatureGroupLayers(datas);
+          const drawnLine = layer.toGeoJSON(); // Convert the drawn layer to GeoJSON
+          console.log("Drawn Line:", drawnLine); // Log the line to the console
+          // You can now store the drawnLine in a state or variable
+        });
+  
+        // Create a line drawing tool
+        const lineDrawHandler = new L.Draw.Polyline(map);
+        lineDrawHandler.enable();
+      }
+      setDrawLine(false);
+      
+    } catch (err) {
+      setIsPopupVisible(true);
+      setIsErrorMessage(true);
+      setPopupMessage("Selectionner d'abord la couche a editer");
+    } finally {
+      setDrawLine(false);
     }
 
-    // Accès à l'instance de la carte via le featureGroupRef
-    if (featureGroupRef.current && featureGroupRef.current._map) {
-      const map = featureGroupRef.current._map;
-      
-      // Listen for the 'draw:created' event to capture the drawn polygon
-      map.on('draw:created', (event) => {
-        const layer = event.layer;
-        let datas = featureGroupLayers;
-        datas[fIdx].push(layer);
-        
-        setFeatureGroupLayers(datas);
-        const drawnPolygon = layer.toGeoJSON(); // Convert the drawn layer to GeoJSON
-        console.log("Drawn Polygon:", drawnPolygon); // Log the polygon to the console
-        // You can now store the drawnPolygon in a state or variable
-      });
-      // Création d'un outil de dessin de polygone
-      const polygonDrawHandler = new L.Draw.Polygon(map);
-      polygonDrawHandler.enable();
-    }
-    setDrawPolygon(false);
   };
+
+  useEffect(() => {
+    if (drawLine) {
+      startDrawingLine();
+    }
+  }, [drawLine]);
+
+  const startDrawingMarker = () => {
+    let layersIdx = JSON.parse(localStorage.getItem("currentLayers"));
+    let fIdx = 0;
+    try
+    {
+      for(let i = 0; i < layersIdx?.length; i++)
+      {
+          if(layersIdx[i].toString() === editionActiveLayer.toString())
+          {
+            fIdx = i;
+            break;
+          }
+      }
+      // Access the map instance via featureGroupRef
+      if (featureGroupRef.current && featureGroupRef.current._map) {
+        const map = featureGroupRef.current._map;
+  
+        // Listen for the 'draw:created' event to capture the drawn marker
+        map.on('draw:created', (event) => {
+          const layer = event.layer;
+          let datas = featureGroupLayers;
+          datas[fIdx].push(layer);
+  
+          setFeatureGroupLayers(datas);
+          const drawnMarker = layer.toGeoJSON(); // Convert the drawn layer to GeoJSON
+          console.log("Drawn Marker:", drawnMarker); // Log the marker to the console
+          // You can now store the drawnMarker in a state or variable
+        });
+  
+        // Create a marker drawing tool
+        const markerDrawHandler = new L.Draw.Marker(map);
+        markerDrawHandler.enable();
+      }
+      setDrawMarker(false);
+      
+    } catch (err) {
+      setIsPopupVisible(true);
+      setIsErrorMessage(true);
+      setPopupMessage("Selectionner d'abord la couche a editer");
+    } finally {
+      setDrawMarker(false);
+    }
+
+  };
+
+  useEffect(() => {
+    if (drawMarker) {
+      startDrawingMarker();
+    }
+  }, [drawMarker]);
   
   const handleLayerEditing = (e) => {
     /*const layers = e.layers.getLayers();
@@ -682,6 +802,42 @@ const Home = () => {
       setIntersectionsArea(total);
     }
   }
+
+  const exportSelectedFeaturesToGeoJSON = () => {
+    if (!featureGroupRef.current) {
+      console.error("FeatureGroup is not defined");
+      return;
+    }
+
+    const layers = featureGroupRef.current.getLayers();
+    const selectedLayers = layers.filter(layer => layer.options?.color === 'green'); // Assuming selected features are styled green
+    const layersToExport = selectedLayers.length > 0 ? selectedLayers : layers;
+
+    const features = layersToExport.map(layer => layer.toGeoJSON());
+
+    // Include intersections
+    intersections.forEach(intersection => {
+      const intersectionFeature = intersection.intersection;
+      intersectionFeature.properties = intersectionFeature.properties || {};
+      intersectionFeature.properties.area = intersection.area;
+      features.push(intersectionFeature);
+    });
+
+    const geoJSON = {
+      type: "FeatureCollection",
+      features: features,
+    };
+
+    const blob = new Blob([JSON.stringify(geoJSON, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "exported-features.geojson";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     recomputeTotalArea();
@@ -901,6 +1057,7 @@ const Home = () => {
   // Calculate the center based on the first feature's coordinates
   //const initialCenter = geojsonContents[0]?.features[0]?.geometry?.coordinates[0][0][0] || [3.86929756871891, 16.029131742598274]//[3.868177, 11.519596];
 
+
   useEffect(() => {
     const handleEditOrDelete = (e) => {
       console.log("Edit or delete operation confirmed:", e);
@@ -919,6 +1076,17 @@ const Home = () => {
       };
     }
   }, [featureGroupRef]);
+
+  /*useEffect(() => {
+    console.log("REF CHANGE", exportToGeojsonBtnRef.current);
+    if(exportToGeojsonBtnRef.current)
+    {
+      exportToGeojsonBtnRef.current.addEventListener("click", () => {
+        alert("Btn Clicked");
+          exportSelectedFeaturesToGeoJSON();
+      });
+    }
+  }, []);*/
   
   return (
     <div className="w-full h-full">
@@ -939,7 +1107,15 @@ const Home = () => {
           className={`px-4 py-2 text-white rounded hidden ${isGeneratingPDF ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
         >
           {isGeneratingPDF ? 'Génération en cours...' : 'Générer un PDF à partir de la vue actuelle'}
-        </button>
+      </button>
+
+      <button
+          onClick={exportSelectedFeaturesToGeoJSON}
+          ref={exportToGeojsonBtnRef}
+          className={`px-4 py-2 text-white rounded hidden`}
+        >
+          export Selected Layers
+      </button>
       
       <input
         type="file"
