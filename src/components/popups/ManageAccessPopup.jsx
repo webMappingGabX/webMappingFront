@@ -9,6 +9,7 @@ const ManageAccessPopup = () => {
     const [ email, setEmail ]  = useState("");
 
     const [ message, setMessage ] = useState("");
+    const [ innerMessage, setInnerMessage ] = useState("Aucun utilisateur disponible");
     const [ users, setUsers ] = useState([]);
 
     const [ operation, setOperation ] = useState(false);
@@ -38,6 +39,9 @@ const ManageAccessPopup = () => {
                 setUsers(Array.isArray(response.data) ? response.data : []);
             } catch (error) {
                 console.error("Error fetching workspace users:", error);
+                if(error.response.data.message) {
+                    setInnerMessage(error.response.data.message);
+                }
             }
         };
 
@@ -108,7 +112,7 @@ const ManageAccessPopup = () => {
 
                     {users.length === 0 && (
                         <div className="flex flex-row items-center space-x-2 text-lg text-center text-gray-600">
-                            Aucun utilisateur disponible
+                            { innerMessage }
                         </div>
                         )
                     }

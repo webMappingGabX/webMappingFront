@@ -105,7 +105,7 @@ const Register = () => {
           </div>
           <button
             type="submit"
-            className="w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-md cursor-pointer hover:bg-indigo-700 focus:outline-none focus:ring focus:ring-indigo-200"
+            className="w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-md cursor-pointer disabled:cursor-wait disabled:bg-gray-400 hover:bg-indigo-700 focus:outline-none focus:ring focus:ring-indigo-200"
             onClick={(e) => handleRegister(e)}
             ref={registerBtnRef}
           >

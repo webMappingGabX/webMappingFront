@@ -67,7 +67,7 @@ const FileMenu = ({ uploadGeojsonBtn, fileName, fileSize, coordSys, handleUpload
                             <p className="text-blue-950">Système de projection : { coordSys }</p>
                             <p className="flex items-center justify-center my-2 text-blue-950"><span>Nom : </span><input type="text" defaultValue="Nouvelle couche" ref={layerNameRef} className="flex-1 px-2 py-1 ml-3 border rounded-sm"/></p>
                         </div>
-                        <button className="flex flex-row items-center justify-center px-6 py-2 mt-3 bg-blue-400 rounded-sm cursor-pointer hover:bg-blue-600"
+                        <button className="flex flex-row items-center justify-center px-6 py-2 mt-3 bg-blue-400 rounded-sm cursor-pointer disabled:cursor-wait disabled:bg-gray-400 hover:bg-blue-600"
                             onClick={handleUpload}
                             ref={uploadBtnRef}>
                             <FaUpload className="mr-4" />

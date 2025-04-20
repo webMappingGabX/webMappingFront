@@ -803,6 +803,10 @@ const Home = () => {
     }
   }
 
+  const filterOutSelectionRectangle = (features) => {
+    return features.filter(feature => feature.geometry.type !== "Polygon" || feature.properties?.isSelection !== true);
+  };
+
   const exportSelectedFeaturesToGeoJSON = () => {
     if (!featureGroupRef.current) {
       console.error("FeatureGroup is not defined");
@@ -810,17 +814,26 @@ const Home = () => {
     }
 
     const layers = featureGroupRef.current.getLayers();
-    const selectedLayers = layers.filter(layer => layer.options?.color === 'green'); // Assuming selected features are styled green
+    const selectedLayers = layers.filter(layer => layer.options?.color === 'green');
     const layersToExport = selectedLayers.length > 0 ? selectedLayers : layers;
 
-    const features = layersToExport.map(layer => layer.toGeoJSON());
+    const features = layersToExport.map(layer => {
+      const geoJSON = layer.toGeoJSON();
+      if (layer instanceof L.Rectangle) {
+        geoJSON.properties.isSelection = true; // Mark selection rectangles
+      }
+      return geoJSON;
+    });
+
+    // Filter out selection rectangles
+    const filteredFeatures = filterOutSelectionRectangle(features);
 
     // Include intersections
     intersections.forEach(intersection => {
       const intersectionFeature = intersection.intersection;
       intersectionFeature.properties = intersectionFeature.properties || {};
       intersectionFeature.properties.area = intersection.area;
-      features.push(intersectionFeature);
+      filteredFeatures.push(intersectionFeature);
     });
 
     const geoJSON = {
@@ -831,7 +844,7 @@ const Home = () => {
           name: "urn:ogc:def:crs:OGC:1.3:CRS84" // WGS84 projection system
         }
       },
-      features: features,
+      features: filteredFeatures,
     };
 
     const blob = new Blob([JSON.stringify(geoJSON, null, 2)], { type: "application/json" });

@@ -40,9 +40,12 @@ const Login = () => {
             layersIdx.push(layer.id.toString())
           });
 
+          console.log("LAYERS IDX ON LOGIN", layersIdx);
+          
           window.localStorage.setItem("currentLayers", JSON.stringify(layersIdx));
           console.log(response?.data);
       }catch(err) {
+        console.log("LAYERS IDX ON FAILED");
           console.log(err?.data)
       }
   }
@@ -67,12 +70,13 @@ const Login = () => {
         console.log("LOGIN DATAS", response.data);
         localStorage.setItem("currentWorkspace", response.data.workspaceIdx);
 
-        getLayers(response.data.workspaceIdx, response.data.token);
+        getLayers(response.data.workspaceIdx, response.data.token).then(() => {
+          goToHome.current.click();
+          if (loginBtnRef.current) {
+            loginBtnRef.current.disabled = false;
+          }
+        })
         
-        goToHome.current.click();
-        if (loginBtnRef.current) {
-          loginBtnRef.current.disabled = false;
-        }
       } else {
         setMessage("Erreur lors de la connexion- : " + response.data.message);
         if (loginBtnRef.current) {
@@ -135,7 +139,7 @@ const Login = () => {
           
           <button
             type="submit"
-            className="w-full px-4 py-2 text-white bg-indigo-600 rounded-md cursor-pointer hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-4 py-2 text-white bg-indigo-600 rounded-md cursor-pointer disabled:cursor-wait disabled:bg-gray-400 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onClick={(e) => handleLogin(e)}
             ref={loginBtnRef}
           >
